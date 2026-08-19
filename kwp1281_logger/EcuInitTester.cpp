@@ -26,6 +26,31 @@ void EcuInitTester::enterState(State next) {
   _state = next;
   _stateStartMs = millis();
 
+  if (_state == State::ERROR_ || _state == State::IDLE) {
+    // Vollstaendiges Session-Reset nach Fehler/Timeout/Abbruch
+    _sessionActive = false;
+    _identFinished = false;
+    _rxCounterInitialized = false;
+    _expectedRxCounter = 0;
+    _blockCounter = 0;
+    _rxBlockPos = 0;
+    _expectedLen = 0;
+    _pendingRxEcho = false;
+    _rxKeyBytesCount = 0;
+    _kb1 = 0;
+    _kb2 = 0;
+    _measurementGroup = 0;
+    _awaitingGroupBody = false;
+    _groupRequestNeedsAck = false;
+    _awaitingGroupSwitchAck = false;
+    memset(_groupHeaderLen, 0, sizeof(_groupHeaderLen));
+
+    // Hardware-Puffer des FTDI/USB leeren (Störbytes vom Anlassen verwerfen)
+    while (_link.available() > 0) {
+      _link.read();
+    }
+  }
+
   // Grob verstaendliche Statuszusammenfassung fuer das Dashboard, getrennt
   // von den detaillierten technischen Zustandsnamen in logState()/Console.
   switch (_state) {
@@ -83,29 +108,15 @@ void EcuInitTester::send5BaudAddress(uint8_t address) {
   console.println("[ECU] 5-baud address transmission finished.");
 }
 
-bool EcuInitTester::waitForByte(uint8_t expected, uint32_t timeoutMs) {
-  const uint32_t start = millis();
-  while (millis() - start < timeoutMs) {
-    if (_link.available() > 0) {
-      int ch = _link.read();
-      if (ch >= 0 && static_cast<uint8_t>(ch) == expected) {
-        return true;
-      }
-    }
-    yield();
-  }
-  return false;
-}
-
 bool EcuInitTester::sendBlockWithHandshake(uint8_t title, const uint8_t *payload, size_t payloadLen) {
   // Vollständiger KWP1281 Block: [Länge] [Counter] [Titel] [Payload...] [0x03]
   uint8_t blockLen = static_cast<uint8_t>(payloadLen + 3);
-  uint8_t txBuf[36];
+  uint8_t txBuf[32];
   txBuf[0] = blockLen;
   txBuf[1] = _blockCounter;
   txBuf[2] = title;
-  if (payload && payloadLen > 0) {
-    memcpy(&txBuf[3], payload, payloadLen);
+  for (size_t i = 0; i < payloadLen; ++i) {
+    txBuf[3 + i] = payload[i];
   }
   txBuf[blockLen] = 0x03; // End of block
 
@@ -113,20 +124,41 @@ bool EcuInitTester::sendBlockWithHandshake(uint8_t title, const uint8_t *payload
   console.printf("[KWP TX] Block Title=0x%02X (ctr=%02X, len=%u)...\n", title, _blockCounter, static_cast<unsigned>(totalBytes));
 
   for (size_t i = 0; i < totalBytes; ++i) {
-    const uint8_t b = txBuf[i];
+    uint8_t b = txBuf[i];
 
     // Byte senden
     _link.write(&b, 1);
 
-    // 1. Eigenes K-Line TX-Echo abwarten und verwerfen (K-Line Transceiver spiegelt TX auf RX)
-    if (!waitForByte(b, 100)) {
-      console.printf("[KWP TX] Echo timeout for byte 0x%02X\n", b);
+    // 1. Eigenes K-Line TX-Echo abwarten und verwerfen
+    uint32_t echoStart = millis();
+    while (millis() - echoStart < 150) {
+      if (_link.available() > 0) {
+        int ch = _link.read();
+        if (ch == b) break;
+      }
+      delay(1);
     }
 
     // 2. Für alle Bytes AUSSER dem letzten (0x03) antwortet die ECU mit ~b
     if (i < totalBytes - 1) {
-      const uint8_t expectedAck = static_cast<uint8_t>(~b);
-      if (!waitForByte(expectedAck, 350)) {
+      uint8_t expectedAck = static_cast<uint8_t>(~b);
+      uint32_t ackStart = millis();
+      bool gotAck = false;
+
+      while (millis() - ackStart < 350) {
+        if (_link.available() > 0) {
+          int ch = _link.read();
+          if (ch < 0) continue;
+          uint8_t rx = static_cast<uint8_t>(ch);
+          if (rx == expectedAck) {
+            gotAck = true;
+            break;
+          }
+        }
+        delay(1);
+      }
+
+      if (!gotAck) {
         console.printf("[KWP TX] Warning: no ~b ACK for tx byte 0x%02X (exp 0x%02X)\n", b, expectedAck);
       }
     }
@@ -181,13 +213,12 @@ void EcuInitTester::decodeNumberedGroup(uint8_t group, const uint8_t *header,
     bool decoded = false;
     float value = 0.0f;
     if ((formula == 0x8B || formula == 0x8C) && tableLen == 17) {
-      uint8_t index = mwb >> 4;
+      uint8_t index = static_cast<uint8_t>(mwb / 16);
       if (index > 15) index = 15;
-      const int16_t left = static_cast<int16_t>(header[headerPos + index]);
-      const int16_t right = static_cast<int16_t>(header[headerPos + index + 1]);
-      const uint8_t frac = mwb & 0x0F;
-      const float interpolated = static_cast<float>(left) + static_cast<float>(right - left) * (frac / 16.0f);
-      value = (formula == 0x8B) ? (interpolated * static_cast<float>(nwb)) : (interpolated - static_cast<float>(nwb));
+      uint8_t left = header[headerPos + index];
+      uint8_t right = header[headerPos + index + 1];
+      float interpolated = left + (right - left) * (mwb % 16) / 16.0f;
+      value = formula == 0x8B ? interpolated * nwb : interpolated - nwb;
       decoded = true;
     } else if (formula == 0x85) {
       value = static_cast<float>(nwb) * mwb / 256.0f;
@@ -261,7 +292,7 @@ void EcuInitTester::parseBlock(const uint8_t *data, size_t len) {
       uint8_t finalRaw = payload[9];
 
       int rpmEst = (rpmRaw > 32) ? (rpmRaw - 32) * 35 : 0;
-      bool engineRunning = (runFlagRaw & 0x80) == 0;
+      bool engineRunning = (runFlagRaw == 0x00);
 
       console.printf("  -> RPM: %d | Gruppe000 raw[7]=0x%02X raw[9]=0x%02X\n",
              rpmEst, group000Raw, finalRaw);
@@ -442,6 +473,7 @@ void EcuInitTester::update() {
             delay(35);
             uint8_t inv = ~_kb2;
             _link.write(&inv, 1);
+            _lastTxTime = millis();
             continue;
           }
 
@@ -454,6 +486,7 @@ void EcuInitTester::update() {
             // Länge mit ~len quittieren
             uint8_t inv = ~b;
             _link.write(&inv, 1);
+            _lastTxTime = millis();
             _pendingRxEcho = true;
             console.printf("[KWP RX] Block Length=0x%02X (%u bytes follow) -> TX ~len=0x%02X\n", b, b, inv);
           } else {
@@ -480,6 +513,7 @@ void EcuInitTester::update() {
             // Dies ist ein Datenbyte (oder Counter/Titel) vor dem Endbyte 0x03 -> Quittieren!
             uint8_t inv = ~b;
             _link.write(&inv, 1);
+            _lastTxTime = millis();
             _pendingRxEcho = true;
             console.printf("[KWP TX ~b] 0x%02X (rx byte[%d]=0x%02X)\n", inv, _rxBlockPos - 1, b);
           } else {
@@ -568,9 +602,6 @@ void EcuInitTester::update() {
 
       if (now - _lastTxTime >= 4000) {
         console.println("[KWP] Session Timeout -> Restarting Init");
-        _rxBlockPos = 0;
-        _expectedLen = 0;
-        _pendingRxEcho = false;
         enterState(State::ERROR_);
       }
       break;

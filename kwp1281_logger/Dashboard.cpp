@@ -110,6 +110,24 @@ void Dashboard::begin() {
   draw();
 }
 
+void Dashboard::pushScopeSample() {
+  if (_scopePaused) {
+    return;
+  }
+  _history[_historyHead] = {
+    .rpm = _rpm,
+    .g69 = _g69Raw,
+    .lambda = _lambdaRaw,
+    .inj = _injRaw,
+    .status = _statusRaw,
+    .running = _running
+  };
+  _historyHead = (_historyHead + 1) % kScopeHistoryLen;
+  if (_historyCount < kScopeHistoryLen) {
+    _historyCount++;
+  }
+}
+
 void Dashboard::handleTouch() {
   if (M5.Touch.getCount() == 0) {
     return;
@@ -118,17 +136,32 @@ void Dashboard::handleTouch() {
   if (!touch.wasPressed()) {
     return;
   }
-  if (touch.y >= kTabHeight || M5.Display.width() <= 0) {
+  if (touch.y < kTabHeight && M5.Display.width() > 0) {
+    const int16_t tabWidth = M5.Display.width() / 3;
+    uint8_t tab = static_cast<uint8_t>(touch.x / tabWidth);
+    selectTab(tab > 2 ? 2 : tab);
     return;
   }
-  const int16_t tabWidth = M5.Display.width() / 3;
-  uint8_t tab = static_cast<uint8_t>(touch.x / tabWidth);
-  selectTab(tab > 2 ? 2 : tab);
+
+  // Auf Tab 3: Touch toggelt Pause / Live-Aufzeichnung
+  if (_tab == 2 && touch.y >= kContentTop) {
+    _scopePaused = !_scopePaused;
+    _dirty = true;
+  }
 }
 
 void Dashboard::update() {
   handleTouch();
-  if (!_dirty || millis() - _lastDrawMs < kRefreshMs) {
+
+  const uint32_t now = millis();
+  // Periodisch Scope-Datenpunkte erfassen (alle 100 ms = 10 Hz)
+  if (now - _lastSampleMs >= 100) {
+    _lastSampleMs = now;
+    pushScopeSample();
+  }
+
+  // Gedrosseltes Dashboard-Redraw (alle 150 ms), um den KWP-Echtzeit-Loop nicht auszuhungern
+  if (!_dirty || now - _lastDrawMs < 150) {
     return;
   }
   draw();
@@ -192,7 +225,8 @@ void Dashboard::setStage(ConnStage stage, const String &detail) {
 }
 
 void Dashboard::draw() {
-  _lastDrawMs = millis();
+  uint32_t t0 = millis();
+  _lastDrawMs = t0;
   _dirty = false;
 
   M5.Display.startWrite();
@@ -210,6 +244,11 @@ void Dashboard::draw() {
   else drawScope();
 
   M5.Display.endWrite();
+
+  uint32_t dur = millis() - t0;
+  if (dur > 20) {
+    Serial.printf("[PERF] Tab %u redraw took %u ms\n", _tab + 1, static_cast<unsigned>(dur));
+  }
 }
 
 void Dashboard::drawTabs() {
@@ -919,7 +958,7 @@ void Dashboard::drawInfo() {
 }
 
 // =============================================================================
-// TAB 3: MESSSCHRIEB (FLACKERFREI UEBER _scopeSprite)
+// TAB 3: MESSSCHRIEB / ECHTE MULTIKANAL-ZEITREIHE (FLACKERFREI UEBER _scopeSprite)
 // =============================================================================
 void Dashboard::drawScope() {
   const int16_t y0 = kContentTop + 8;
@@ -927,27 +966,126 @@ void Dashboard::drawScope() {
   const int16_t scopeH = M5.Display.height() - y0 - kMargin;
 
   _scopeSprite.fillScreen(TFT_BLACK);
-  _scopeSprite.fillRoundRect(0, 0, scopeW, scopeH, 12, TFT_DARKGREY);
+  _scopeSprite.fillRoundRect(0, 0, scopeW, scopeH, 12, TFT_BLACK);
   _scopeSprite.drawRoundRect(0, 0, scopeW, scopeH, 12, TFT_MAGENTA);
 
-  _scopeSprite.setTextSize(3);
-  _scopeSprite.setTextColor(TFT_WHITE, TFT_DARKGREY);
-  _scopeSprite.setCursor(24, 40);
-  _scopeSprite.println("Vorbereitung fuer Meilenstein M6 (Testfahrt)");
-
+  // Kopfzeile & Legende
   _scopeSprite.setTextSize(2);
-  _scopeSprite.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
-  _scopeSprite.setCursor(24, 90);
-  _scopeSprite.println("- Drehzahlverlauf (RPM) live grafisch zeichnen");
-  _scopeSprite.setCursor(24, 120);
-  _scopeSprite.println("- G69 Drosselklappenstellung in Grad ueber Zeit");
-  _scopeSprite.setCursor(24, 150);
-  _scopeSprite.println("- Leerlauf- und Schubabschaltungsphasen farbig markieren");
-  _scopeSprite.setCursor(24, 180);
-  _scopeSprite.println("- Korrelation Bergabfahrt / Ruckeln / Schubbetrieb");
-  _scopeSprite.setCursor(24, 220);
-  _scopeSprite.setTextColor(TFT_CYAN, TFT_DARKGREY);
-  _scopeSprite.println("Graph wird bei Beginn der Testfahrt automatisch aktiviert.");
+  _scopeSprite.setTextColor(TFT_WHITE, TFT_BLACK);
+  _scopeSprite.setCursor(16, 12);
+  _scopeSprite.print("MESSSCHRIEB: ");
+
+  if (_scopePaused) {
+    _scopeSprite.setTextColor(TFT_ORANGE, TFT_BLACK);
+    _scopeSprite.print("[PAUSE] ");
+  } else {
+    _scopeSprite.setTextColor(TFT_GREEN, TFT_BLACK);
+    _scopeSprite.print("[LIVE 10Hz] ");
+  }
+
+  // Farblegende
+  _scopeSprite.setTextColor(TFT_GREEN, TFT_BLACK);
+  _scopeSprite.print("RPM  ");
+  _scopeSprite.setTextColor(TFT_CYAN, TFT_BLACK);
+  _scopeSprite.print("G69  ");
+  _scopeSprite.setTextColor(TFT_YELLOW, TFT_BLACK);
+  _scopeSprite.print("LAMBDA  ");
+  _scopeSprite.setTextColor(TFT_MAGENTA, TFT_BLACK);
+  _scopeSprite.print("LAST");
+
+  // Diagrammbereich
+  const int16_t graphX = 64;
+  const int16_t graphY = 44;
+  const int16_t graphW = scopeW - graphX - 24;
+  const int16_t graphH = scopeH - graphY - 42;
+
+  _scopeSprite.fillRect(graphX, graphY, graphW, graphH, TFT_DARKGREY);
+  _scopeSprite.drawRect(graphX, graphY, graphW, graphH, TFT_WHITE);
+
+  // Horizontale Gitterlinien & Y-Achsen-Beschriftung (Drehzahl 0 - 5000 RPM)
+  for (int rpmStep = 0; rpmStep <= 5000; rpmStep += 1000) {
+    float frac = static_cast<float>(rpmStep) / 5000.0f;
+    int16_t gy = graphY + graphH - static_cast<int16_t>(frac * graphH);
+    _scopeSprite.drawFastHLine(graphX, gy, graphW, (rpmStep == 0 || rpmStep == 5000) ? TFT_WHITE : TFT_BLACK);
+
+    _scopeSprite.setTextSize(1);
+    _scopeSprite.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
+    _scopeSprite.setCursor(graphX - 44, gy - 4);
+    _scopeSprite.printf("%4d", rpmStep);
+  }
+
+  // Schubabschaltungs- / Leerlauf-Hintergrundbänder (schnell per drawFastVLine)
+  if (_historyCount > 1) {
+    size_t oldestIdx = (_historyCount == kScopeHistoryLen) ? _historyHead : 0;
+    for (size_t i = 0; i < _historyCount; ++i) {
+      size_t idx = (oldestIdx + i) % kScopeHistoryLen;
+      const auto &s = _history[idx];
+      int16_t x = graphX + static_cast<int16_t>((i * graphW) / (kScopeHistoryLen - 1));
+
+      // Schubabschaltung (G69 == 0 && RPM > 1300 && running): blau
+      if (s.running && s.g69 == 0 && s.rpm > 1300) {
+        _scopeSprite.drawFastVLine(x, graphY + 1, graphH - 2, TFT_NAVY);
+      }
+      // Leerlauf (G69 == 0 && RPM <= 1100 && running): dunkelgrün
+      else if (s.running && s.g69 == 0 && s.rpm >= 600 && s.rpm <= 1100) {
+        _scopeSprite.drawFastVLine(x, graphY + 1, graphH - 2, TFT_DARKGREEN);
+      }
+    }
+  }
+
+  // Datenreihen zeichnen (effizient in einem einzigen Durchlauf)
+  if (_historyCount > 1) {
+    size_t oldestIdx = (_historyCount == kScopeHistoryLen) ? _historyHead : 0;
+
+    int16_t prevX = 0;
+    int16_t prevY_rpm = 0;
+    int16_t prevY_g69 = 0;
+    int16_t prevY_lam = 0;
+    int16_t prevY_inj = 0;
+
+    for (size_t i = 0; i < _historyCount; ++i) {
+      size_t idx = (oldestIdx + i) % kScopeHistoryLen;
+      const auto &samp = _history[idx];
+      int16_t currX = graphX + static_cast<int16_t>((i * graphW) / (kScopeHistoryLen - 1));
+
+      // RPM (0..5000)
+      uint32_t rClamped = samp.rpm > 5000 ? 5000 : samp.rpm;
+      int16_t currY_rpm = graphY + graphH - static_cast<int16_t>((rClamped * graphH) / 5000);
+
+      // G69 (0..80)
+      uint32_t gClamped = samp.g69 > 80 ? 80 : samp.g69;
+      int16_t currY_g69 = graphY + graphH - static_cast<int16_t>((gClamped * graphH) / 80);
+
+      // Lambda (0..255)
+      int16_t currY_lam = graphY + graphH - static_cast<int16_t>((static_cast<uint32_t>(samp.lambda) * graphH) / 255);
+
+      // Inj (0..30)
+      uint32_t injClamped = samp.inj > 30 ? 30 : samp.inj;
+      int16_t currY_inj = graphY + graphH - static_cast<int16_t>((injClamped * graphH) / 30);
+
+      if (i > 0) {
+        _scopeSprite.drawLine(prevX, prevY_rpm, currX, currY_rpm, TFT_GREEN);
+        _scopeSprite.drawLine(prevX, prevY_g69, currX, currY_g69, TFT_CYAN);
+        _scopeSprite.drawLine(prevX, prevY_lam, currX, currY_lam, TFT_YELLOW);
+        _scopeSprite.drawLine(prevX, prevY_inj, currX, currY_inj, TFT_MAGENTA);
+      }
+
+      prevX = currX;
+      prevY_rpm = currY_rpm;
+      prevY_g69 = currY_g69;
+      prevY_lam = currY_lam;
+      prevY_inj = currY_inj;
+    }
+  }
+
+  // Fußzeile
+  const int16_t footY = scopeH - 28;
+  _scopeSprite.setTextSize(2);
+  _scopeSprite.setTextColor(TFT_WHITE, TFT_BLACK);
+  _scopeSprite.setCursor(16, footY);
+  _scopeSprite.printf("LIVE: RPM=%u | G69=%u | Lambda=%.3f (raw %u) | ti=%u | Stat=0x%02X",
+                      _rpm, _g69Raw, _lambdaRaw > 0 ? (_lambdaRaw / 128.0f) : 1.0f,
+                      _lambdaRaw, _injRaw, _statusRaw);
 
   _scopeSprite.pushSprite(kMargin, y0);
 }

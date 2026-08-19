@@ -138,8 +138,25 @@ void setup() {
   g_linkReady = true;
 }
 
+static void processSerialCommands() {
+  while (Serial.available() > 0) {
+    char c = static_cast<char>(Serial.read());
+    if (c == '1') {
+      dashboard.selectTab(0);
+      Serial.println("[CMD] Switched to Tab 1 (WERTE)");
+    } else if (c == '2') {
+      dashboard.selectTab(1);
+      Serial.println("[CMD] Switched to Tab 2 (ECU / LOG)");
+    } else if (c == '3') {
+      dashboard.selectTab(2);
+      Serial.println("[CMD] Switched to Tab 3 (MESSSCHRIEB)");
+    }
+  }
+}
+
 void loop() {
   M5.update();
+  processSerialCommands();
 
   // Wenn die Link-Initialisierung in setup() gescheitert ist, nichts mehr
   // tun - ein uninitialisiertes SerialLink duerfen wir nicht ansteuern.
@@ -167,10 +184,18 @@ void loop() {
 
   tester.update();
 
-  // Display-Redraw bewusst NACH tester.update() und gedrosselt (siehe
-  // Console::update()), damit das teure SPI-Fullscreen-Redraw niemals die
-  // zeitkritische KWP1281-Handshake-Verarbeitung verzoegert.
+  // Display-Redraw bewusst NACH tester.update() und nur dann, wenn
+  // gerade KEIN KWP1281-Block-Empfang im Gange ist, damit das 100-140ms teure
+  // Display-Redraw auf dem M5Tab5 das 20-35ms Byte-ACK-Zeitfenster der ECU
+  // niemals blockiert.
+#if ECU_INIT_TEST
+  if (!tester.isBusyReceiving()) {
+    console.update();
+    dashboard.update();
+  }
+#else
   console.update();
   dashboard.update();
+#endif
   delay(kLoopDelayMs);
 }

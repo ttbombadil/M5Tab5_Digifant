@@ -37,6 +37,8 @@ public:
   void setState(const String &state);
   void setStage(ConnStage stage, const String &detail = "");
   void incBlockCount() { _blockCount++; _dirty = true; }
+  void selectTab(uint8_t tab);
+  uint8_t getActiveTab() const { return _tab; }
 
   static float rawToCoolantTemp(uint8_t raw);
   static float rawToIatTemp(uint8_t raw);
@@ -49,7 +51,6 @@ private:
   void drawScope();
   void drawTabs();
   void drawStatusBar();
-  void selectTab(uint8_t tab);
   void handleTouch();
 
   // Instrument-Renderfunktionen (8 Kacheln: 4 Spalten x 2 Zeilen)
@@ -62,12 +63,31 @@ private:
   void drawLambdaCard(LGFX_Sprite &s, int16_t w, int16_t h);
   void drawInjectionCard(LGFX_Sprite &s, int16_t w, int16_t h);
 
+  static constexpr size_t kScopeHistoryLen = 240;
+
+  struct ScopeSample {
+    uint16_t rpm;
+    uint8_t g69;
+    uint8_t lambda;
+    uint8_t inj;
+    uint8_t status;
+    bool running;
+  };
+
+  void pushScopeSample();
+
   LGFX_Sprite _tileSprite{&M5.Display};
   LGFX_Sprite _statusSprite{&M5.Display};
   LGFX_Sprite _tab2CardSprite{&M5.Display};
   LGFX_Sprite _logSprite{&M5.Display};
   LGFX_Sprite _scopeSprite{&M5.Display};
   bool _spritesCreated = false;
+
+  ScopeSample _history[kScopeHistoryLen] = {};
+  size_t _historyHead = 0;
+  size_t _historyCount = 0;
+  uint32_t _lastSampleMs = 0;
+  bool _scopePaused = false;
 
   uint8_t _tab = 0;
   uint8_t _lastDrawnTab = 255;

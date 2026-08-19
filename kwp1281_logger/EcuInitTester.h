@@ -24,6 +24,13 @@ public:
                           uint32_t retryIntervalMs = 6000);
 
   void update();
+  bool isBusyReceiving() const { 
+    return (_state == State::LINE_IDLE_WAIT || 
+            _state == State::SEND_5BAUD_BITBANG || 
+            _state == State::WAIT_SYNC_KEYBYTES || 
+            _state == State::SEND_INVERTED_KEYWORD || 
+            _rxBlockPos > 0); 
+  }
 
 private:
   enum class State : uint8_t {
@@ -41,7 +48,6 @@ private:
   void enterState(State next);
   void logState() const;
   void send5BaudAddress(uint8_t address);
-  bool waitForByte(uint8_t expected, uint32_t timeoutMs);
   bool sendBlockWithHandshake(uint8_t title, const uint8_t *payload, size_t payloadLen);
   void parseBlock(const uint8_t *data, size_t len);
   void requestMeasurementGroup();
@@ -86,6 +92,6 @@ private:
   uint8_t _groupHeaderLen[5] = {0};
 
   uint8_t _baudIndex = 0; // Fixiert auf 1200 Baud (Verifiziert am Fahrzeug)
-  static constexpr uint32_t kTargetBauds[] = {1200, 9600, 4800, 10400};
+  static constexpr uint32_t kTargetBauds[] = {1200};
   static constexpr size_t kNumBauds = sizeof(kTargetBauds) / sizeof(kTargetBauds[0]);
 };
