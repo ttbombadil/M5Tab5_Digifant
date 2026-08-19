@@ -1,0 +1,1298 @@
+[KWP TX ~b] 0x05 (rx byte[1]=0xFA)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0x37 (rx byte[3]=0xC8)
+[KWP TX ~b] 0xBB (rx byte[4]=0x44)
+[KWP TX ~b] 0xFF (rx byte[5]=0x00)
+[KWP TX ~b] 0x80 (rx byte[6]=0x7F)
+[KWP RX END] 0x03 (total 8 bytes)
+[M4 GROUP 3 BODY] (4 bytes): 
+C8 
+44 [ECU] starting KWP1281 init sequence
+[ECU] state=LINE_IDLE_WAIT (2.6s)
+[ECU] state=SEND_5BAUD_BITBANG
+[ECU] Bit-banging 5-baud address 0x01 (200ms/bit)...
+[ECU] 5-baud address transmission finished.
+[ECU] waiting at 10400 baud for Sync(0x55) + Keybytes...
+[ECU] Timeout at 10400 baud waiting for Sync
+[ECU] starting KWP1281 init sequence
+[ECU] state=LINE_IDLE_WAIT (2.6s)
+[ECU] state=SEND_5BAUD_BITBANG
+[ECU] Bit-banging 5-baud address 0x01 (200ms/bit)...
+[ECU] 5-baud address transmission finished.
+[ECU] waiting at 1200 baud for Sync(0x55) + Keybytes...
+[ECU] Timeout at 1200 baud waiting for Sync
+[ECU] starting KWP1281 init sequence
+[ECU] state=LINE_IDLE_WAIT (2.6s)
+[ECU] state=SEND_5BAUD_BITBANG
+[ECU] Bit-banging 5-baud address 0x01 (200ms/bit)...
+[ECU] 5-baud address transmission finished.
+[ECU] waiting at 9600 baud for Sync(0x55) + Keybytes...
+[ECU] Timeout at 9600 baud waiting for Sync
+[ECU] starting KWP1281 init sequence
+[ECU] state=LINE_IDLE_WAIT (2.6s)
+[ECU] state=SEND_5BAUD_BITBANG
+[ECU] Bit-banging 5-baud address 0x01 (200ms/bit)...
+[ECU] 5-baud address transmission finished.
+[ECU] waiting at 4800 baud for Sync(0x55) + Keybytes...
+[ECU] Timeout at 4800 baud waiting for Sync
+[ECU] starting KWP1281 init sequence
+[ECU] state=LINE_IDLE_WAIT (2.6s)
+[ECU] state=SEND_5BAUD_BITBANG
+[ECU] Bit-banging 5-baud address 0x01 (200ms/bit)...
+[ECU] 5-baud address transmission finished.
+[ECU] waiting at 10400 baud for Sync(0x55) + Keybytes...
+[ECU] Timeout at 10400 baud waiting for Sync
+[ECU] starting KWP1281 init sequence
+[ECU] state=LINE_IDLE_WAIT (2.6s)
+[ECU] state=SEND_5BAUD_BITBANG
+[ECU] Bit-banging 5-baud address 0x01 (200ms/bit)...
+[ECU] 5-baud address transmission finished.
+[ECU] waiting at 1200 baud for Sync(0x55) + Keybytes...
+[ECU] rx Sync: 0x55 (KWP1281 SYNC OK!)
+[ECU] rx Keybyte 1: 0x01
+[ECU] rx Keybyte 2: 0x8A
+[ECU] TX ~KB2 ack: 0x75 (written=1)
+[ECU] Handshake done! Listening for ECU blocks...
+[KWP RX] stray byte 0x75
+[KWP] 2nd Keybyte 2: 0x8A -> Responding ~KB2 (0x75)!
+[KWP RX] stray byte 0x75
+[KWP RX] Block Length=0x0F (15 bytes follow) -> TX ~len=0xF0
+[KWP TX ~b] 0xFF (rx byte[1]=0x00)
+[KWP TX ~b] 0x09 (rx byte[2]=0xF6)
+[KWP TX ~b] 0xCF (rx byte[3]=0x30)
+[KWP TX ~b] 0xCC (rx byte[4]=0x33)
+[KWP TX ~b] 0xC8 (rx byte[5]=0x37)
+[KWP TX ~b] 0xC6 (rx byte[6]=0x39)
+[KWP TX ~b] 0xCF (rx byte[7]=0x30)
+[KWP TX ~b] 0xC9 (rx byte[8]=0x36)
+[KWP TX ~b] 0xCF (rx byte[9]=0x30)
+[KWP TX ~b] 0xCD (rx byte[10]=0x32)
+[KWP TX ~b] 0xCB (rx byte[11]=0x34)
+[KWP TX ~b] 0xBE (rx byte[12]=0x41)
+[KWP TX ~b] 0xB8 (rx byte[13]=0x47)
+[KWP TX ~b] 0xDF (rx byte[14]=0x20)
+[KWP RX END] 0x03 (total 16 bytes)
+
+>>> [ECU IDENT] '037906024AG ' <<<
+[KWP TX] Block Title=0x09 (ctr=01, len=4)...
+[KWP RX] Block Length=0x1B (27 bytes follow) -> TX ~len=0xE4
+[KWP TX ~b] 0xFD (rx byte[1]=0x02)
+[KWP TX ~b] 0x09 (rx byte[2]=0xF6)
+[KWP TX ~b] 0xBB (rx byte[3]=0x44)
+[KWP TX ~b] 0xB6 (rx byte[4]=0x49)
+[KWP TX ~b] 0xB8 (rx byte[5]=0x47)
+[KWP TX ~b] 0xB6 (rx byte[6]=0x49)
+[KWP TX ~b] 0xB9 (rx byte[7]=0x46)
+[KWP TX ~b] 0xBE (rx byte[8]=0x41)
+[KWP TX ~b] 0xB1 (rx byte[9]=0x4E)
+[KWP TX ~b] 0xAB (rx byte[10]=0x54)
+[KWP TX ~b] 0xDF (rx byte[11]=0x20)
+[KWP TX ~b] 0xCE (rx byte[12]=0x31)
+[KWP TX ~b] 0xD1 (rx byte[13]=0x2E)
+[KWP TX ~b] 0xC8 (rx byte[14]=0x37)
+[KWP TX ~b] 0xDF (rx byte[15]=0x20)
+[KWP TX ~b] 0xDF (rx byte[16]=0x20)
+[KWP TX ~b] 0xDF (rx byte[17]=0x20)
+[KWP TX ~b] 0xDF (rx byte[18]=0x20)
+[KWP TX ~b] 0xDF (rx byte[19]=0x20)
+[KWP TX ~b] 0xDF (rx byte[20]=0x20)
+[KWP TX ~b] 0xDF (rx byte[21]=0x20)
+[KWP TX ~b] 0xDF (rx byte[22]=0x20)
+[KWP TX ~b] 0xCE (rx byte[23]=0x31)
+[KWP TX ~b] 0xCA (rx byte[24]=0x35)
+[KWP TX ~b] 0xC8 (rx byte[25]=0x37)
+[KWP TX ~b] 0xC9 (rx byte[26]=0x36)
+[KWP RX END] 0x03 (total 28 bytes)
+
+>>> [ECU IDENT] 'DIGIFANT 1.7        1576' <<<
+[KWP TX] Block Title=0x09 (ctr=03, len=4)...
+[KWP RX] Block Length=0x0A (10 bytes follow) -> TX ~len=0xF5
+[KWP TX ~b] 0xFB (rx byte[1]=0x04)
+[KWP TX ~b] 0x09 (rx byte[2]=0xF6)
+[KWP TX ~b] 0xAF (rx byte[3]=0x50)
+[KWP TX ~b] 0xB2 (rx byte[4]=0x4D)
+[KWP TX ~b] 0xBC (rx byte[5]=0x43)
+[KWP TX ~b] 0xDF (rx byte[6]=0x20)
+[KWP TX ~b] 0xDF (rx byte[7]=0x20)
+[KWP TX ~b] 0xDF (rx byte[8]=0x20)
+[KWP TX ~b] 0xDF (rx byte[9]=0x20)
+[KWP RX END] 0x03 (total 11 bytes)
+
+>>> [ECU IDENT] 'PMC    ' <<<
+[KWP TX] Block Title=0x09 (ctr=05, len=4)...
+[KWP RX] Block Length=0x03 (3 bytes follow) -> TX ~len=0xFC
+[KWP TX ~b] 0xF9 (rx byte[1]=0x06)
+[KWP TX ~b] 0xF6 (rx byte[2]=0x09)
+[KWP RX END] 0x03 (total 4 bytes)
+[KWP] RX ACK from ECU
+
+[M4] IDENT FINISHED; starting groups 000..004
+[KWP TX] Block Title=0x12 (ctr=07, len=4)...
+[KWP RX] Block Length=0x0D (13 bytes follow) -> TX ~len=0xF2
+[KWP TX ~b] 0xF7 (rx byte[1]=0x08)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0xC5 (rx byte[3]=0x3A)
+[KWP TX ~b] 0x6B (rx byte[4]=0x94)
+[KWP TX ~b] 0xE8 (rx byte[5]=0x17)
+[KWP TX ~b] 0xC2 (rx byte[6]=0x3D)
+[KWP TX ~b] 0x8C (rx byte[7]=0x73)
+[KWP TX ~b] 0xFF (rx byte[8]=0x00)
+[KWP TX ~b] 0x80 (rx byte[9]=0x7F)
+[KWP TX ~b] 0xDB (rx byte[10]=0x24)
+[KWP TX ~b] 0xF9 (rx byte[11]=0x06)
+[KWP TX ~b] 0x33 (rx byte[12]=0xCC)
+[KWP RX END] 0x03 (total 14 bytes)
+[M4 GROUP 0 BODY] (10 bytes): 
+3A 
+94 
+17 
+3D 
+73 
+00 
+7F 
+24 
+06 
+CC 
+
+  -> RPM: 1015 | Batt: 10.6V | G69 Drosselklappe: 18.0 deg (raw 0x24)
+  -> Motor: STOPPED (Flag 0x7F) | K??hlmittelRaw: 23 | IAT: 58 | Lambda: 115
+[KWP TX] Block Title=0x09 (ctr=09, len=4)...
+[KWP RX] Block Length=0x03 (3 bytes follow) -> TX ~len=0xFC
+[KWP TX ~b] 0xF5 (rx byte[1]=0x0A)
+[KWP TX ~b] 0xF6 (rx byte[2]=0x09)
+[KWP RX END] 0x03 (total 4 bytes)
+[KWP] RX ACK from ECU
+[KWP TX] Block Title=0x29 (ctr=0B, len=5)...
+[KWP RX] Block Length=0x31 (49 bytes follow) -> TX ~len=0xCE
+[KWP TX ~b] 0xF3 (rx byte[1]=0x0C)
+[KWP TX ~b] 0xFD (rx byte[2]=0x02)
+[KWP TX ~b] 0x74 (rx byte[3]=0x8B)
+[KWP TX ~b] 0xE5 (rx byte[4]=0x1A)
+[KWP TX ~b] 0xEE (rx byte[5]=0x11)
+[KWP TX ~b] 0x05 (rx byte[6]=0xFA)
+[KWP TX ~b] 0x1E (rx byte[7]=0xE1)
+[KWP TX ~b] 0x1F (rx byte[8]=0xE0)
+[KWP TX ~b] 0x43 (rx byte[9]=0xBC)
+[KWP TX ~b] 0x52 (rx byte[10]=0xAD)
+[KWP TX ~b] 0x69 (rx byte[11]=0x96)
+[KWP TX ~b] 0x7B (rx byte[12]=0x84)
+[KWP TX ~b] 0x8A (rx byte[13]=0x75)
+[KWP TX ~b] 0x9E (rx byte[14]=0x61)
+[KWP TX ~b] 0xAC (rx byte[15]=0x53)
+[KWP TX ~b] 0xB7 (rx byte[16]=0x48)
+[KWP TX ~b] 0xC6 (rx byte[17]=0x39)
+[KWP TX ~b] 0xD7 (rx byte[18]=0x28)
+[KWP TX ~b] 0xE0 (rx byte[19]=0x1F)
+[KWP TX ~b] 0xE6 (rx byte[20]=0x19)
+[KWP TX ~b] 0xED (rx byte[21]=0x12)
+[KWP TX ~b] 0xFF (rx byte[22]=0x00)
+[KWP TX ~b] 0x73 (rx byte[23]=0x8C)
+[KWP TX ~b] 0xD7 (rx byte[24]=0x28)
+[KWP TX ~b] 0xEE (rx byte[25]=0x11)
+[KWP TX ~b] 0x5F (rx byte[26]=0xA0)
+[KWP TX ~b] 0x9B (rx byte[27]=0x64)
+[KWP TX ~b] 0xAF (rx byte[28]=0x50)
+[KWP TX ~b] 0xBB (rx byte[29]=0x44)
+[KWP TX ~b] 0xC5 (rx byte[30]=0x3A)
+[KWP TX ~b] 0xCD (rx byte[31]=0x32)
+[KWP TX ~b] 0xD3 (rx byte[32]=0x2C)
+[KWP TX ~b] 0xD9 (rx byte[33]=0x26)
+[KWP TX ~b] 0xDE (rx byte[34]=0x21)
+[KWP TX ~b] 0xE4 (rx byte[35]=0x1B)
+[KWP TX ~b] 0xE9 (rx byte[36]=0x16)
+[KWP TX ~b] 0xEF (rx byte[37]=0x10)
+[KWP TX ~b] 0xF4 (rx byte[38]=0x0B)
+[KWP TX ~b] 0xFB (rx byte[39]=0x04)
+[KWP TX ~b] 0xFF (rx byte[40]=0x00)
+[KWP TX ~b] 0xFF (rx byte[41]=0x00)
+[KWP TX ~b] 0xFF (rx byte[42]=0x00)
+[KWP TX ~b] 0x7A (rx byte[43]=0x85)
+[KWP TX ~b] 0xFD (rx byte[44]=0x02)
+[KWP TX ~b] 0xFF (rx byte[45]=0x00)
+[KWP TX ~b] 0x77 (rx byte[46]=0x88)
+[KWP TX ~b] 0x00 (rx byte[47]=0xFF)
+[KWP TX ~b] 0xFF (rx byte[48]=0x00)
+[KWP RX END] 0x03 (total 50 bytes)
+[M4 HEADER group 1] (46 bytes)
+[KWP TX] Block Title=0x29 (ctr=0D, len=5)...
+[KWP RX] Block Length=0x07 (7 bytes follow) -> TX ~len=0xF8
+[KWP TX ~b] 0xF1 (rx byte[1]=0x0E)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0x89 (rx byte[3]=0x76)
+[KWP TX ~b] 0xE8 (rx byte[4]=0x17)
+[KWP TX ~b] 0x9C (rx byte[5]=0x63)
+[KWP TX ~b] 0xF0 (rx byte[6]=0x0F)
+[KWP RX END] 0x03 (total 8 bytes)
+[M4 GROUP 1 BODY] (4 bytes): 
+76 
+17 
+63 
+0F 
+
+[M4 GROUP 1] header=46 body=4: 
+z1 f=8B raw=118 val=2847.00; 
+z2 f=8C raw=23 val=51.25; 
+z3 f=85 raw=99 val=0.77; 
+z4 f=88 raw=15 val=15.00; 
+
+[KWP TX] Block Title=0x09 (ctr=0F, len=4)...
+[KWP RX] Block Length=0x03 (3 bytes follow) -> TX ~len=0xFC
+[KWP TX ~b] 0xEF (rx byte[1]=0x10)
+[KWP TX ~b] 0xF6 (rx byte[2]=0x09)
+[KWP RX END] 0x03 (total 4 bytes)
+[KWP] RX ACK from ECU
+[KWP TX] Block Title=0x29 (ctr=11, len=5)...
+[KWP RX] Block Length=0x31 (49 bytes follow) -> TX ~len=0xCE
+[KWP TX ~b] 0xED (rx byte[1]=0x12)
+[KWP TX ~b] 0xFD (rx byte[2]=0x02)
+[KWP TX ~b] 0x74 (rx byte[3]=0x8B)
+[KWP TX ~b] 0xE5 (rx byte[4]=0x1A)
+[KWP TX ~b] 0xEE (rx byte[5]=0x11)
+[KWP TX ~b] 0x05 (rx byte[6]=0xFA)
+[KWP TX ~b] 0x1E (rx byte[7]=0xE1)
+[KWP TX ~b] 0x1F (rx byte[8]=0xE0)
+[KWP TX ~b] 0x43 (rx byte[9]=0xBC)
+[KWP TX ~b] 0x52 (rx byte[10]=0xAD)
+[KWP TX ~b] 0x69 (rx byte[11]=0x96)
+[KWP TX ~b] 0x7B (rx byte[12]=0x84)
+[KWP TX ~b] 0x8A (rx byte[13]=0x75)
+[KWP TX ~b] 0x9E (rx byte[14]=0x61)
+[KWP TX ~b] 0xAC (rx byte[15]=0x53)
+[KWP TX ~b] 0xB7 (rx byte[16]=0x48)
+[KWP TX ~b] 0xC6 (rx byte[17]=0x39)
+[KWP TX ~b] 0xD7 (rx byte[18]=0x28)
+[KWP TX ~b] 0xE0 (rx byte[19]=0x1F)
+[KWP TX ~b] 0xE6 (rx byte[20]=0x19)
+[KWP TX ~b] 0xED (rx byte[21]=0x12)
+[KWP TX ~b] 0xFF (rx byte[22]=0x00)
+[KWP TX ~b] 0x76 (rx byte[23]=0x89)
+[KWP TX ~b] 0xCD (rx byte[24]=0x32)
+[KWP TX ~b] 0xFF (rx byte[25]=0x00)
+[KWP TX ~b] 0x7A (rx byte[26]=0x85)
+[KWP TX ~b] 0xE7 (rx byte[27]=0x18)
+[KWP TX ~b] 0xFF (rx byte[28]=0x00)
+[KWP TX ~b] 0x73 (rx byte[29]=0x8C)
+[KWP TX ~b] 0xD7 (rx byte[30]=0x28)
+[KWP TX ~b] 0xEE (rx byte[31]=0x11)
+[KWP TX ~b] 0x5F (rx byte[32]=0xA0)
+[KWP TX ~b] 0x9B (rx byte[33]=0x64)
+[KWP TX ~b] 0xAF (rx byte[34]=0x50)
+[KWP TX ~b] 0xBB (rx byte[35]=0x44)
+[KWP TX ~b] 0xC5 (rx byte[36]=0x3A)
+[KWP TX ~b] 0xCD (rx byte[37]=0x32)
+[KWP TX ~b] 0xD3 (rx byte[38]=0x2C)
+[KWP TX ~b] 0xD9 (rx byte[39]=0x26)
+[KWP TX ~b] 0xDE (rx byte[40]=0x21)
+[KWP TX ~b] 0xE4 (rx byte[41]=0x1B)
+[KWP TX ~b] 0xE9 (rx byte[42]=0x16)
+[KWP TX ~b] 0xEF (rx byte[43]=0x10)
+[KWP TX ~b] 0xF4 (rx byte[44]=0x0B)
+[KWP TX ~b] 0xFB (rx byte[45]=0x04)
+[KWP TX ~b] 0xFF (rx byte[46]=0x00)
+[KWP TX ~b] 0xFF (rx byte[47]=0x00)
+[KWP TX ~b] 0xFF (rx byte[48]=0x00)
+[KWP RX END] 0x03 (total 50 bytes)
+[M4 HEADER group 2] (46 bytes)
+[KWP TX] Block Title=0x29 (ctr=13, len=5)...
+[KWP RX] Block Length=0x07 (7 bytes follow) -> TX ~len=0xF8
+[KWP TX ~b] 0xEB (rx byte[1]=0x14)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0x69 (rx byte[3]=0x96)
+[KWP TX ~b] 0xFB (rx byte[4]=0x04)
+[KWP TX ~b] 0x6B (rx byte[5]=0x94)
+[KWP TX ~b] 0xC6 (rx byte[6]=0x39)
+[KWP RX END] 0x03 (total 8 bytes)
+[M4 GROUP 2 BODY] (4 bytes): 
+96 
+04 
+94 
+39 
+
+[M4 GROUP 2] header=46 body=4: 
+z1 f=8B raw=150 val=2050.75; 
+z2 f=89 raw=4 val=2.00; 
+z3 f=85 raw=148 val=13.88; 
+z4 f=8C raw=57 val=22.38; 
+
+[KWP TX] Block Title=0x09 (ctr=15, len=4)...
+[KWP RX] Block Length=0x03 (3 bytes follow) -> TX ~len=0xFC
+[KWP TX ~b] 0xE9 (rx byte[1]=0x16)
+[KWP TX ~b] 0xF6 (rx byte[2]=0x09)
+[KWP RX END] 0x03 (total 4 bytes)
+[KWP] RX ACK from ECU
+[KWP TX] Block Title=0x29 (ctr=17, len=5)...
+[KWP RX] Block Length=0x20 (32 bytes follow) -> TX ~len=0xDF
+[KWP TX ~b] 0xE7 (rx byte[1]=0x18)
+[KWP TX ~b] 0xFD (rx byte[2]=0x02)
+[KWP TX ~b] 0x74 (rx byte[3]=0x8B)
+[KWP TX ~b] 0xE5 (rx byte[4]=0x1A)
+[KWP TX ~b] 0xEE (rx byte[5]=0x11)
+[KWP TX ~b] 0x05 (rx byte[6]=0xFA)
+[KWP TX ~b] 0x1E (rx byte[7]=0xE1)
+[KWP TX ~b] 0x1F (rx byte[8]=0xE0)
+[KWP TX ~b] 0x43 (rx byte[9]=0xBC)
+[KWP TX ~b] 0x52 (rx byte[10]=0xAD)
+[KWP TX ~b] 0x69 (rx byte[11]=0x96)
+[KWP TX ~b] 0x7B (rx byte[12]=0x84)
+[KWP TX ~b] 0x8A (rx byte[13]=0x75)
+[KWP TX ~b] 0x9E (rx byte[14]=0x61)
+[KWP TX ~b] 0xAC (rx byte[15]=0x53)
+[KWP TX ~b] 0xB7 (rx byte[16]=0x48)
+[KWP TX ~b] 0xC6 (rx byte[17]=0x39)
+[KWP TX ~b] 0xD7 (rx byte[18]=0x28)
+[KWP TX ~b] 0xE0 (rx byte[19]=0x1F)
+[KWP TX ~b] 0xE6 (rx byte[20]=0x19)
+[KWP TX ~b] 0xED (rx byte[21]=0x12)
+[KWP TX ~b] 0xFF (rx byte[22]=0x00)
+[KWP TX ~b] 0x7E (rx byte[23]=0x81)
+[KWP TX ~b] 0x9B (rx byte[24]=0x64)
+[KWP TX ~b] 0xFF (rx byte[25]=0x00)
+[KWP TX ~b] 0x7B (rx byte[26]=0x84)
+[KWP TX ~b] 0xFD (rx byte[27]=0x02)
+[KWP TX ~b] 0xFF (rx byte[28]=0x00)
+[KWP TX ~b] 0x7E (rx byte[29]=0x81)
+[KWP TX ~b] 0x9B (rx byte[30]=0x64)
+[KWP TX ~b] 0xFF (rx byte[31]=0x00)
+[KWP RX END] 0x03 (total 33 bytes)
+[M4 HEADER group 3] (29 bytes)
+[KWP TX] Block Title=0x29 (ctr=19, len=5)...
+[KWP RX] Block Length=0x07 (7 bytes follow) -> TX ~len=0xF8
+[KWP TX ~b] 0xE5 (rx byte[1]=0x1A)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0x48 (rx byte[3]=0xB7)
+[KWP TX ~b] 0xC9 (rx byte[4]=0x36)
+[KWP TX ~b] 0xFF (rx byte[5]=0x00)
+[KWP TX ~b] 0x90 (rx byte[6]=0x6F)
+[KWP RX END] 0x03 (total 8 bytes)
+[M4 GROUP 3 BODY] (4 bytes): 
+B7 
+36 
+00 
+6F 
+
+[M4 GROUP 3] header=29 body=4: 
+z1 f=8B raw=183 val=1288.62; 
+z2 f=81 raw=54; 
+z3 f=84 raw=0; 
+z4 f=81 raw=111; 
+
+[KWP TX] Block Title=0x09 (ctr=1B, len=4)...
+[KWP RX] Block Length=0x03 (3 bytes follow) -> TX ~len=0xFC
+[KWP TX ~b] 0xE3 (rx byte[1]=0x1C)
+[KWP TX ~b] 0xF6 (rx byte[2]=0x09)
+[KWP RX END] 0x03 (total 4 bytes)
+[KWP] RX ACK from ECU
+[KWP TX] Block Title=0x29 (ctr=1D, len=5)...
+[KWP RX] Block Length=0x20 (32 bytes follow) -> TX ~len=0xDF
+[KWP TX ~b] 0xE1 (rx byte[1]=0x1E)
+[KWP TX ~b] 0xFD (rx byte[2]=0x02)
+[KWP TX ~b] 0x74 (rx byte[3]=0x8B)
+[KWP TX ~b] 0xE5 (rx byte[4]=0x1A)
+[KWP TX ~b] 0xEE (rx byte[5]=0x11)
+[KWP TX ~b] 0x05 (rx byte[6]=0xFA)
+[KWP TX ~b] 0x1E (rx byte[7]=0xE1)
+[KWP TX ~b] 0x1F (rx byte[8]=0xE0)
+[KWP TX ~b] 0x43 (rx byte[9]=0xBC)
+[KWP TX ~b] 0x52 (rx byte[10]=0xAD)
+[KWP TX ~b] 0x69 (rx byte[11]=0x96)
+[KWP TX ~b] 0x7B (rx byte[12]=0x84)
+[KWP TX ~b] 0x8A (rx byte[13]=0x75)
+[KWP TX ~b] 0x9E (rx byte[14]=0x61)
+[KWP TX ~b] 0xAC (rx byte[15]=0x53)
+[KWP TX ~b] 0xB7 (rx byte[16]=0x48)
+[KWP TX ~b] 0xC6 (rx byte[17]=0x39)
+[KWP TX ~b] 0xD7 (rx byte[18]=0x28)
+[KWP TX ~b] 0xE0 (rx byte[19]=0x1F)
+[KWP TX ~b] 0xE6 (rx byte[20]=0x19)
+[KWP TX ~b] 0xED (rx byte[21]=0x12)
+[KWP TX ~b] 0xFF (rx byte[22]=0x00)
+[KWP TX ~b] 0x7E (rx byte[23]=0x81)
+[KWP TX ~b] 0x9B (rx byte[24]=0x64)
+[KWP TX ~b] 0xFF (rx byte[25]=0x00)
+[KWP TX ~b] 0x78 (rx byte[26]=0x87)
+[KWP TX ~b] 0xFE (rx byte[27]=0x01)
+[KWP TX ~b] 0xFF (rx byte[28]=0x00)
+[KWP TX ~b] 0x77 (rx byte[29]=0x88)
+[KWP TX ~b] 0x00 (rx byte[30]=0xFF)
+[KWP TX ~b] 0xFF (rx byte[31]=0x00)
+[KWP RX END] 0x03 (total 33 bytes)
+[M4 HEADER group 4] (29 bytes)
+[KWP TX] Block Title=0x29 (ctr=1F, len=5)...
+[KWP RX] Block Length=0x07 (7 bytes follow) -> TX ~len=0xF8
+[KWP TX ~b] 0xDF (rx byte[1]=0x20)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0x33 (rx byte[3]=0xCC)
+[KWP TX ~b] 0xC8 (rx byte[4]=0x37)
+[KWP TX ~b] 0x00 (rx byte[5]=0xFF)
+[KWP TX ~b] 0xBF (rx byte[6]=0x40)
+[KWP RX END] 0x03 (total 8 bytes)
+[M4 GROUP 4 BODY] (4 bytes): 
+CC 
+37 
+FF 
+40 
+
+[M4 GROUP 4] header=29 body=4: 
+z1 f=8B raw=204 val=864.50; 
+z2 f=81 raw=55; 
+z3 f=87 raw=255; 
+z4 f=88 raw=64 val=64.00; 
+
+[KWP TX] Block Title=0x12 (ctr=21, len=4)...
+[KWP RX] Block Length=0x0D (13 bytes follow) -> TX ~len=0xF2
+[KWP TX ~b] 0xDD (rx byte[1]=0x22)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0xC6 (rx byte[3]=0x39)
+[KWP TX ~b] 0x6B (rx byte[4]=0x94)
+[KWP TX ~b] 0xEA (rx byte[5]=0x15)
+[KWP TX ~b] 0xC7 (rx byte[6]=0x38)
+[KWP TX ~b] 0x8A (rx byte[7]=0x75)
+[KWP TX ~b] 0xFF (rx byte[8]=0x00)
+[KWP TX ~b] 0x80 (rx byte[9]=0x7F)
+[KWP TX ~b] 0xDB (rx byte[10]=0x24)
+[KWP TX ~b] 0xF9 (rx byte[11]=0x06)
+[KWP TX ~b] 0x32 (rx byte[12]=0xCD)
+[KWP RX END] 0x03 (total 14 bytes)
+[M4 GROUP 0 BODY] (10 bytes): 
+39 
+94 
+15 
+38 
+75 
+00 
+7F 
+24 
+06 
+CD 
+
+  -> RPM: 840 | Batt: 10.7V | G69 Drosselklappe: 18.0 deg (raw 0x24)
+  -> Motor: STOPPED (Flag 0x7F) | K??hlmittelRaw: 21 | IAT: 57 | Lambda: 117
+[KWP TX] Block Title=0x09 (ctr=23, len=4)...
+[KWP RX] Block Length=0x03 (3 bytes follow) -> TX ~len=0xFC
+[KWP TX ~b] 0xDB (rx byte[1]=0x24)
+[KWP TX ~b] 0xF6 (rx byte[2]=0x09)
+[KWP RX END] 0x03 (total 4 bytes)
+[KWP] RX ACK from ECU
+[KWP TX] Block Title=0x29 (ctr=25, len=5)...
+[KWP RX] Block Length=0x31 (49 bytes follow) -> TX ~len=0xCE
+[KWP TX ~b] 0xD9 (rx byte[1]=0x26)
+[KWP TX ~b] 0xFD (rx byte[2]=0x02)
+[KWP TX ~b] 0x74 (rx byte[3]=0x8B)
+[KWP TX ~b] 0xE5 (rx byte[4]=0x1A)
+[KWP TX ~b] 0xEE (rx byte[5]=0x11)
+[KWP TX ~b] 0x05 (rx byte[6]=0xFA)
+[KWP TX ~b] 0x1E (rx byte[7]=0xE1)
+[KWP TX ~b] 0x1F (rx byte[8]=0xE0)
+[KWP TX ~b] 0x43 (rx byte[9]=0xBC)
+[KWP TX ~b] 0x52 (rx byte[10]=0xAD)
+[KWP TX ~b] 0x69 (rx byte[11]=0x96)
+[KWP TX ~b] 0x7B (rx byte[12]=0x84)
+[KWP TX ~b] 0x8A (rx byte[13]=0x75)
+[KWP TX ~b] 0x9E (rx byte[14]=0x61)
+[KWP TX ~b] 0xAC (rx byte[15]=0x53)
+[KWP TX ~b] 0xB7 (rx byte[16]=0x48)
+[KWP TX ~b] 0xC6 (rx byte[17]=0x39)
+[KWP TX ~b] 0xD7 (rx byte[18]=0x28)
+[KWP TX ~b] 0xE0 (rx byte[19]=0x1F)
+[KWP TX ~b] 0xE6 (rx byte[20]=0x19)
+[KWP TX ~b] 0xED (rx byte[21]=0x12)
+[KWP TX ~b] 0xFF (rx byte[22]=0x00)
+[KWP TX ~b] 0x73 (rx byte[23]=0x8C)
+[KWP TX ~b] 0xD7 (rx byte[24]=0x28)
+[KWP TX ~b] 0xEE (rx byte[25]=0x11)
+[KWP TX ~b] 0x5F (rx byte[26]=0xA0)
+[KWP TX ~b] 0x9B (rx byte[27]=0x64)
+[KWP TX ~b] 0xAF (rx byte[28]=0x50)
+[KWP TX ~b] 0xBB (rx byte[29]=0x44)
+[KWP TX ~b] 0xC5 (rx byte[30]=0x3A)
+[KWP TX ~b] 0xCD (rx byte[31]=0x32)
+[KWP TX ~b] 0xD3 (rx byte[32]=0x2C)
+[KWP TX ~b] 0xD9 (rx byte[33]=0x26)
+[KWP TX ~b] 0xDE (rx byte[34]=0x21)
+[KWP TX ~b] 0xE4 (rx byte[35]=0x1B)
+[KWP TX ~b] 0xE9 (rx byte[36]=0x16)
+[KWP TX ~b] 0xEF (rx byte[37]=0x10)
+[KWP TX ~b] 0xF4 (rx byte[38]=0x0B)
+[KWP TX ~b] 0xFB (rx byte[39]=0x04)
+[KWP TX ~b] 0xFF (rx byte[40]=0x00)
+[KWP TX ~b] 0xFF (rx byte[41]=0x00)
+[KWP TX ~b] 0xFF (rx byte[42]=0x00)
+[KWP TX ~b] 0x7A (rx byte[43]=0x85)
+[KWP TX ~b] 0xFD (rx byte[44]=0x02)
+[KWP TX ~b] 0xFF (rx byte[45]=0x00)
+[KWP TX ~b] 0x77 (rx byte[46]=0x88)
+[KWP TX ~b] 0x00 (rx byte[47]=0xFF)
+[KWP TX ~b] 0xFF (rx byte[48]=0x00)
+[KWP RX END] 0x03 (total 50 bytes)
+[M4 HEADER group 1] (46 bytes)
+[KWP TX] Block Title=0x29 (ctr=27, len=5)...
+[KWP RX] Block Length=0x07 (7 bytes follow) -> TX ~len=0xF8
+[KWP TX ~b] 0xD7 (rx byte[1]=0x28)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0x32 (rx byte[3]=0xCD)
+[KWP TX ~b] 0xEA (rx byte[4]=0x15)
+[KWP TX ~b] 0x9B (rx byte[5]=0x64)
+[KWP TX ~b] 0xF6 (rx byte[6]=0x09)
+[KWP RX END] 0x03 (total 8 bytes)
+[M4 GROUP 1 BODY] (4 bytes): 
+CD 
+15 
+64 
+09 
+
+[M4 GROUP 1] header=46 body=4: 
+z1 f=8B raw=205 val=849.88; 
+z2 f=8C raw=21 val=53.75; 
+z3 f=85 raw=100 val=0.78; 
+z4 f=88 raw=9 val=9.00; 
+
+[KWP TX] Block Title=0x09 (ctr=29, len=4)...
+[KWP RX] Block Length=0x03 (3 bytes follow) -> TX ~len=0xFC
+[KWP TX ~b] 0xD5 (rx byte[1]=0x2A)
+[KWP TX ~b] 0xF6 (rx byte[2]=0x09)
+[KWP RX END] 0x03 (total 4 bytes)
+[KWP] RX ACK from ECU
+[KWP TX] Block Title=0x29 (ctr=2B, len=5)...
+[KWP RX] Block Length=0x31 (49 bytes follow) -> TX ~len=0xCE
+[KWP TX ~b] 0xD3 (rx byte[1]=0x2C)
+[KWP TX ~b] 0xFD (rx byte[2]=0x02)
+[KWP TX ~b] 0x74 (rx byte[3]=0x8B)
+[KWP TX ~b] 0xE5 (rx byte[4]=0x1A)
+[KWP TX ~b] 0xEE (rx byte[5]=0x11)
+[KWP TX ~b] 0x05 (rx byte[6]=0xFA)
+[KWP TX ~b] 0x1E (rx byte[7]=0xE1)
+[KWP TX ~b] 0x1F (rx byte[8]=0xE0)
+[KWP TX ~b] 0x43 (rx byte[9]=0xBC)
+[KWP TX ~b] 0x52 (rx byte[10]=0xAD)
+[KWP TX ~b] 0x69 (rx byte[11]=0x96)
+[KWP TX ~b] 0x7B (rx byte[12]=0x84)
+[KWP TX ~b] 0x8A (rx byte[13]=0x75)
+[KWP TX ~b] 0x9E (rx byte[14]=0x61)
+[KWP TX ~b] 0xAC (rx byte[15]=0x53)
+[KWP TX ~b] 0xB7 (rx byte[16]=0x48)
+[KWP TX ~b] 0xC6 (rx byte[17]=0x39)
+[KWP TX ~b] 0xD7 (rx byte[18]=0x28)
+[KWP TX ~b] 0xE0 (rx byte[19]=0x1F)
+[KWP TX ~b] 0xE6 (rx byte[20]=0x19)
+[KWP TX ~b] 0xED (rx byte[21]=0x12)
+[KWP TX ~b] 0xFF (rx byte[22]=0x00)
+[KWP TX ~b] 0x76 (rx byte[23]=0x89)
+[KWP TX ~b] 0xCD (rx byte[24]=0x32)
+[KWP TX ~b] 0xFF (rx byte[25]=0x00)
+[KWP TX ~b] 0x7A (rx byte[26]=0x85)
+[KWP TX ~b] 0xE7 (rx byte[27]=0x18)
+[KWP TX ~b] 0xFF (rx byte[28]=0x00)
+[KWP TX ~b] 0x73 (rx byte[29]=0x8C)
+[KWP TX ~b] 0xD7 (rx byte[30]=0x28)
+[KWP TX ~b] 0xEE (rx byte[31]=0x11)
+[KWP TX ~b] 0x5F (rx byte[32]=0xA0)
+[KWP TX ~b] 0x9B (rx byte[33]=0x64)
+[KWP TX ~b] 0xAF (rx byte[34]=0x50)
+[KWP TX ~b] 0xBB (rx byte[35]=0x44)
+[KWP TX ~b] 0xC5 (rx byte[36]=0x3A)
+[KWP TX ~b] 0xCD (rx byte[37]=0x32)
+[KWP TX ~b] 0xD3 (rx byte[38]=0x2C)
+[KWP TX ~b] 0xD9 (rx byte[39]=0x26)
+[KWP TX ~b] 0xDE (rx byte[40]=0x21)
+[KWP TX ~b] 0xE4 (rx byte[41]=0x1B)
+[KWP TX ~b] 0xE9 (rx byte[42]=0x16)
+[KWP TX ~b] 0xEF (rx byte[43]=0x10)
+[KWP TX ~b] 0xF4 (rx byte[44]=0x0B)
+[KWP TX ~b] 0xFB (rx byte[45]=0x04)
+[KWP TX ~b] 0xFF (rx byte[46]=0x00)
+[KWP TX ~b] 0xFF (rx byte[47]=0x00)
+[KWP TX ~b] 0xFF (rx byte[48]=0x00)
+[KWP RX END] 0x03 (total 50 bytes)
+[M4 HEADER group 2] (46 bytes)
+[KWP TX] Block Title=0x29 (ctr=2D, len=5)...
+[KWP RX] Block Length=0x07 (7 bytes follow) -> TX ~len=0xF8
+[KWP TX ~b] 0xD1 (rx byte[1]=0x2E)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0x33 (rx byte[3]=0xCC)
+[KWP TX ~b] 0xF9 (rx byte[4]=0x06)
+[KWP TX ~b] 0x6B (rx byte[5]=0x94)
+[KWP TX ~b] 0xC5 (rx byte[6]=0x3A)
+[KWP RX END] 0x03 (total 8 bytes)
+[M4 GROUP 2 BODY] (4 bytes): 
+CC 
+06 
+94 
+3A 
+
+[M4 GROUP 2] header=46 body=4: 
+z1 f=8B raw=204 val=864.50; 
+z2 f=89 raw=6 val=3.00; 
+z3 f=85 raw=148 val=13.88; 
+z4 f=8C raw=58 val=21.75; 
+
+[KWP TX] Block Title=0x09 (ctr=2F, len=4)...
+[KWP RX] Block Length=0x03 (3 bytes follow) -> TX ~len=0xFC
+[KWP TX ~b] 0xCF (rx byte[1]=0x30)
+[KWP TX ~b] 0xF6 (rx byte[2]=0x09)
+[KWP RX END] 0x03 (total 4 bytes)
+[KWP] RX ACK from ECU
+[KWP TX] Block Title=0x29 (ctr=31, len=5)...
+[KWP RX] Block Length=0x20 (32 bytes follow) -> TX ~len=0xDF
+[KWP TX ~b] 0xCD (rx byte[1]=0x32)
+[KWP TX ~b] 0xFD (rx byte[2]=0x02)
+[KWP TX ~b] 0x74 (rx byte[3]=0x8B)
+[KWP TX ~b] 0xE5 (rx byte[4]=0x1A)
+[KWP TX ~b] 0xEE (rx byte[5]=0x11)
+[KWP TX ~b] 0x05 (rx byte[6]=0xFA)
+[KWP TX ~b] 0x1E (rx byte[7]=0xE1)
+[KWP TX ~b] 0x1F (rx byte[8]=0xE0)
+[KWP TX ~b] 0x43 (rx byte[9]=0xBC)
+[KWP TX ~b] 0x52 (rx byte[10]=0xAD)
+[KWP TX ~b] 0x69 (rx byte[11]=0x96)
+[KWP TX ~b] 0x7B (rx byte[12]=0x84)
+[KWP TX ~b] 0x8A (rx byte[13]=0x75)
+[KWP TX ~b] 0x9E (rx byte[14]=0x61)
+[KWP TX ~b] 0xAC (rx byte[15]=0x53)
+[KWP TX ~b] 0xB7 (rx byte[16]=0x48)
+[KWP TX ~b] 0xC6 (rx byte[17]=0x39)
+[KWP TX ~b] 0xD7 (rx byte[18]=0x28)
+[KWP TX ~b] 0xE0 (rx byte[19]=0x1F)
+[KWP TX ~b] 0xE6 (rx byte[20]=0x19)
+[KWP TX ~b] 0xED (rx byte[21]=0x12)
+[KWP TX ~b] 0xFF (rx byte[22]=0x00)
+[KWP TX ~b] 0x7E (rx byte[23]=0x81)
+[KWP TX ~b] 0x9B (rx byte[24]=0x64)
+[KWP TX ~b] 0xFF (rx byte[25]=0x00)
+[KWP TX ~b] 0x7B (rx byte[26]=0x84)
+[KWP TX ~b] 0xFD (rx byte[27]=0x02)
+[KWP TX ~b] 0xFF (rx byte[28]=0x00)
+[KWP TX ~b] 0x7E (rx byte[29]=0x81)
+[KWP TX ~b] 0x9B (rx byte[30]=0x64)
+[KWP TX ~b] 0xFF (rx byte[31]=0x00)
+[KWP RX END] 0x03 (total 33 bytes)
+[M4 HEADER group 3] (29 bytes)
+[KWP TX] Block Title=0x29 (ctr=33, len=5)...
+[KWP RX] Block Length=0x07 (7 bytes follow) -> TX ~len=0xF8
+[KWP TX ~b] 0xCB (rx byte[1]=0x34)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0x33 (rx byte[3]=0xCC)
+[KWP TX ~b] 0xC6 (rx byte[4]=0x39)
+[KWP TX ~b] 0xFF (rx byte[5]=0x00)
+[KWP TX ~b] 0x91 (rx byte[6]=0x6E)
+[KWP RX END] 0x03 (total 8 bytes)
+[M4 GROUP 3 BODY] (4 bytes): 
+CC 
+39 
+00 
+6E 
+
+[M4 GROUP 3] header=29 body=4: 
+z1 f=8B raw=204 val=864.50; 
+z2 f=81 raw=57; 
+z3 f=84 raw=0; 
+z4 f=81 raw=110; 
+
+[KWP TX] Block Title=0x09 (ctr=35, len=4)...
+[KWP RX] Block Length=0x03 (3 bytes follow) -> TX ~len=0xFC
+[KWP TX ~b] 0xC9 (rx byte[1]=0x36)
+[KWP TX ~b] 0xF6 (rx byte[2]=0x09)
+[KWP RX END] 0x03 (total 4 bytes)
+[KWP] RX ACK from ECU
+[KWP TX] Block Title=0x29 (ctr=37, len=5)...
+[KWP RX] Block Length=0x20 (32 bytes follow) -> TX ~len=0xDF
+[KWP TX ~b] 0xC7 (rx byte[1]=0x38)
+[KWP TX ~b] 0xFD (rx byte[2]=0x02)
+[KWP TX ~b] 0x74 (rx byte[3]=0x8B)
+[KWP TX ~b] 0xE5 (rx byte[4]=0x1A)
+[KWP TX ~b] 0xEE (rx byte[5]=0x11)
+[KWP TX ~b] 0x05 (rx byte[6]=0xFA)
+[KWP TX ~b] 0x1E (rx byte[7]=0xE1)
+[KWP TX ~b] 0x1F (rx byte[8]=0xE0)
+[KWP TX ~b] 0x43 (rx byte[9]=0xBC)
+[KWP TX ~b] 0x52 (rx byte[10]=0xAD)
+[KWP TX ~b] 0x69 (rx byte[11]=0x96)
+[KWP TX ~b] 0x7B (rx byte[12]=0x84)
+[KWP TX ~b] 0x8A (rx byte[13]=0x75)
+[KWP TX ~b] 0x9E (rx byte[14]=0x61)
+[KWP TX ~b] 0xAC (rx byte[15]=0x53)
+[KWP TX ~b] 0xB7 (rx byte[16]=0x48)
+[KWP TX ~b] 0xC6 (rx byte[17]=0x39)
+[KWP TX ~b] 0xD7 (rx byte[18]=0x28)
+[KWP TX ~b] 0xE0 (rx byte[19]=0x1F)
+[KWP TX ~b] 0xE6 (rx byte[20]=0x19)
+[KWP TX ~b] 0xED (rx byte[21]=0x12)
+[KWP TX ~b] 0xFF (rx byte[22]=0x00)
+[KWP TX ~b] 0x7E (rx byte[23]=0x81)
+[KWP TX ~b] 0x9B (rx byte[24]=0x64)
+[KWP TX ~b] 0xFF (rx byte[25]=0x00)
+[KWP TX ~b] 0x78 (rx byte[26]=0x87)
+[KWP TX ~b] 0xFE (rx byte[27]=0x01)
+[KWP TX ~b] 0xFF (rx byte[28]=0x00)
+[KWP TX ~b] 0x77 (rx byte[29]=0x88)
+[KWP TX ~b] 0x00 (rx byte[30]=0xFF)
+[KWP TX ~b] 0xFF (rx byte[31]=0x00)
+[KWP RX END] 0x03 (total 33 bytes)
+[M4 HEADER group 4] (29 bytes)
+[KWP TX] Block Title=0x29 (ctr=39, len=5)...
+[KWP RX] Block Length=0x07 (7 bytes follow) -> TX ~len=0xF8
+[KWP TX ~b] 0xC5 (rx byte[1]=0x3A)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0x32 (rx byte[3]=0xCD)
+[KWP TX ~b] 0xC4 (rx byte[4]=0x3B)
+[KWP TX ~b] 0x00 (rx byte[5]=0xFF)
+[KWP TX ~b] 0xBF (rx byte[6]=0x40)
+[KWP RX END] 0x03 (total 8 bytes)
+[M4 GROUP 4 BODY] (4 bytes): 
+CD 
+3B 
+FF 
+40 
+
+[M4 GROUP 4] header=29 body=4: 
+z1 f=8B raw=205 val=849.88; 
+z2 f=81 raw=59; 
+z3 f=87 raw=255; 
+z4 f=88 raw=64 val=64.00; 
+
+[KWP TX] Block Title=0x12 (ctr=3B, len=4)...
+[KWP RX] Block Length=0x0D (13 bytes follow) -> TX ~len=0xF2
+[KWP TX ~b] 0xC3 (rx byte[1]=0x3C)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0xC6 (rx byte[3]=0x39)
+[KWP TX ~b] 0x6B (rx byte[4]=0x94)
+[KWP TX ~b] 0xEB (rx byte[5]=0x14)
+[KWP TX ~b] 0xC5 (rx byte[6]=0x3A)
+[KWP TX ~b] 0x89 (rx byte[7]=0x76)
+[KWP TX ~b] 0xFF (rx byte[8]=0x00)
+[KWP TX ~b] 0x80 (rx byte[9]=0x7F)
+[KWP TX ~b] 0xDB (rx byte[10]=0x24)
+[KWP TX ~b] 0xF9 (rx byte[11]=0x06)
+[KWP TX ~b] 0x32 (rx byte[12]=0xCD)
+[KWP RX END] 0x03 (total 14 bytes)
+[M4 GROUP 0 BODY] (10 bytes): 
+39 
+94 
+14 
+3A 
+76 
+00 
+7F 
+24 
+06 
+CD 
+
+  -> RPM: 910 | Batt: 10.7V | G69 Drosselklappe: 18.0 deg (raw 0x24)
+  -> Motor: STOPPED (Flag 0x7F) | K??hlmittelRaw: 20 | IAT: 57 | Lambda: 118
+[KWP TX] Block Title=0x09 (ctr=3D, len=4)...
+[KWP RX] Block Length=0x03 (3 bytes follow) -> TX ~len=0xFC
+[KWP TX ~b] 0xC1 (rx byte[1]=0x3E)
+[KWP TX ~b] 0xF6 (rx byte[2]=0x09)
+[KWP RX END] 0x03 (total 4 bytes)
+[KWP] RX ACK from ECU
+[KWP TX] Block Title=0x29 (ctr=3F, len=5)...
+[KWP RX] Block Length=0x31 (49 bytes follow) -> TX ~len=0xCE
+[KWP TX ~b] 0xBF (rx byte[1]=0x40)
+[KWP TX ~b] 0xFD (rx byte[2]=0x02)
+[KWP TX ~b] 0x74 (rx byte[3]=0x8B)
+[KWP TX ~b] 0xE5 (rx byte[4]=0x1A)
+[KWP TX ~b] 0xEE (rx byte[5]=0x11)
+[KWP TX ~b] 0x05 (rx byte[6]=0xFA)
+[KWP TX ~b] 0x1E (rx byte[7]=0xE1)
+[KWP TX ~b] 0x1F (rx byte[8]=0xE0)
+[KWP TX ~b] 0x43 (rx byte[9]=0xBC)
+[KWP TX ~b] 0x52 (rx byte[10]=0xAD)
+[KWP TX ~b] 0x69 (rx byte[11]=0x96)
+[KWP TX ~b] 0x7B (rx byte[12]=0x84)
+[KWP TX ~b] 0x8A (rx byte[13]=0x75)
+[KWP TX ~b] 0x9E (rx byte[14]=0x61)
+[KWP TX ~b] 0xAC (rx byte[15]=0x53)
+[KWP TX ~b] 0xB7 (rx byte[16]=0x48)
+[KWP TX ~b] 0xC6 (rx byte[17]=0x39)
+[KWP TX ~b] 0xD7 (rx byte[18]=0x28)
+[KWP TX ~b] 0xE0 (rx byte[19]=0x1F)
+[KWP TX ~b] 0xE6 (rx byte[20]=0x19)
+[KWP TX ~b] 0xED (rx byte[21]=0x12)
+[KWP TX ~b] 0xFF (rx byte[22]=0x00)
+[KWP TX ~b] 0x73 (rx byte[23]=0x8C)
+[KWP TX ~b] 0xD7 (rx byte[24]=0x28)
+[KWP TX ~b] 0xEE (rx byte[25]=0x11)
+[KWP TX ~b] 0x5F (rx byte[26]=0xA0)
+[KWP TX ~b] 0x9B (rx byte[27]=0x64)
+[KWP TX ~b] 0xAF (rx byte[28]=0x50)
+[KWP TX ~b] 0xBB (rx byte[29]=0x44)
+[KWP TX ~b] 0xC5 (rx byte[30]=0x3A)
+[KWP TX ~b] 0xCD (rx byte[31]=0x32)
+[KWP TX ~b] 0xD3 (rx byte[32]=0x2C)
+[KWP TX ~b] 0xD9 (rx byte[33]=0x26)
+[KWP TX ~b] 0xDE (rx byte[34]=0x21)
+[KWP TX ~b] 0xE4 (rx byte[35]=0x1B)
+[KWP TX ~b] 0xE9 (rx byte[36]=0x16)
+[KWP TX ~b] 0xEF (rx byte[37]=0x10)
+[KWP TX ~b] 0xF4 (rx byte[38]=0x0B)
+[KWP TX ~b] 0xFB (rx byte[39]=0x04)
+[KWP TX ~b] 0xFF (rx byte[40]=0x00)
+[KWP TX ~b] 0xFF (rx byte[41]=0x00)
+[KWP TX ~b] 0xFF (rx byte[42]=0x00)
+[KWP TX ~b] 0x7A (rx byte[43]=0x85)
+[KWP TX ~b] 0xFD (rx byte[44]=0x02)
+[KWP TX ~b] 0xFF (rx byte[45]=0x00)
+[KWP TX ~b] 0x77 (rx byte[46]=0x88)
+[KWP TX ~b] 0x00 (rx byte[47]=0xFF)
+[KWP TX ~b] 0xFF (rx byte[48]=0x00)
+[KWP RX END] 0x03 (total 50 bytes)
+[M4 HEADER group 1] (46 bytes)
+[KWP TX] Block Title=0x29 (ctr=41, len=5)...
+[KWP RX] Block Length=0x07 (7 bytes follow) -> TX ~len=0xF8
+[KWP TX ~b] 0xBD (rx byte[1]=0x42)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0x32 (rx byte[3]=0xCD)
+[KWP TX ~b] 0xEB (rx byte[4]=0x14)
+[KWP TX ~b] 0x9B (rx byte[5]=0x64)
+[KWP TX ~b] 0xF6 (rx byte[6]=0x09)
+[KWP RX END] 0x03 (total 8 bytes)
+[M4 GROUP 1 BODY] (4 bytes): 
+CD 
+14 
+64 
+09 
+
+[M4 GROUP 1] header=46 body=4: 
+z1 f=8B raw=205 val=849.88; 
+z2 f=8C raw=20 val=55.00; 
+z3 f=85 raw=100 val=0.78; 
+z4 f=88 raw=9 val=9.00; 
+
+[KWP TX] Block Title=0x09 (ctr=43, len=4)...
+[KWP RX] Block Length=0x03 (3 bytes follow) -> TX ~len=0xFC
+[KWP TX ~b] 0xBB (rx byte[1]=0x44)
+[KWP TX ~b] 0xF6 (rx byte[2]=0x09)
+[KWP RX END] 0x03 (total 4 bytes)
+[KWP] RX ACK from ECU
+[KWP TX] Block Title=0x29 (ctr=45, len=5)...
+[KWP RX] Block Length=0x31 (49 bytes follow) -> TX ~len=0xCE
+[KWP TX ~b] 0xB9 (rx byte[1]=0x46)
+[KWP TX ~b] 0xFD (rx byte[2]=0x02)
+[KWP TX ~b] 0x74 (rx byte[3]=0x8B)
+[KWP TX ~b] 0xE5 (rx byte[4]=0x1A)
+[KWP TX ~b] 0xEE (rx byte[5]=0x11)
+[KWP TX ~b] 0x05 (rx byte[6]=0xFA)
+[KWP TX ~b] 0x1E (rx byte[7]=0xE1)
+[KWP TX ~b] 0x1F (rx byte[8]=0xE0)
+[KWP TX ~b] 0x43 (rx byte[9]=0xBC)
+[KWP TX ~b] 0x52 (rx byte[10]=0xAD)
+[KWP TX ~b] 0x69 (rx byte[11]=0x96)
+[KWP TX ~b] 0x7B (rx byte[12]=0x84)
+[KWP TX ~b] 0x8A (rx byte[13]=0x75)
+[KWP TX ~b] 0x9E (rx byte[14]=0x61)
+[KWP TX ~b] 0xAC (rx byte[15]=0x53)
+[KWP TX ~b] 0xB7 (rx byte[16]=0x48)
+[KWP TX ~b] 0xC6 (rx byte[17]=0x39)
+[KWP TX ~b] 0xD7 (rx byte[18]=0x28)
+[KWP TX ~b] 0xE0 (rx byte[19]=0x1F)
+[KWP TX ~b] 0xE6 (rx byte[20]=0x19)
+[KWP TX ~b] 0xED (rx byte[21]=0x12)
+[KWP TX ~b] 0xFF (rx byte[22]=0x00)
+[KWP TX ~b] 0x76 (rx byte[23]=0x89)
+[KWP TX ~b] 0xCD (rx byte[24]=0x32)
+[KWP TX ~b] 0xFF (rx byte[25]=0x00)
+[KWP TX ~b] 0x7A (rx byte[26]=0x85)
+[KWP TX ~b] 0xE7 (rx byte[27]=0x18)
+[KWP TX ~b] 0xFF (rx byte[28]=0x00)
+[KWP TX ~b] 0x73 (rx byte[29]=0x8C)
+[KWP TX ~b] 0xD7 (rx byte[30]=0x28)
+[KWP TX ~b] 0xEE (rx byte[31]=0x11)
+[KWP TX ~b] 0x5F (rx byte[32]=0xA0)
+[KWP TX ~b] 0x9B (rx byte[33]=0x64)
+[KWP TX ~b] 0xAF (rx byte[34]=0x50)
+[KWP TX ~b] 0xBB (rx byte[35]=0x44)
+[KWP TX ~b] 0xC5 (rx byte[36]=0x3A)
+[KWP TX ~b] 0xCD (rx byte[37]=0x32)
+[KWP TX ~b] 0xD3 (rx byte[38]=0x2C)
+[KWP TX ~b] 0xD9 (rx byte[39]=0x26)
+[KWP TX ~b] 0xDE (rx byte[40]=0x21)
+[KWP TX ~b] 0xE4 (rx byte[41]=0x1B)
+[KWP TX ~b] 0xE9 (rx byte[42]=0x16)
+[KWP TX ~b] 0xEF (rx byte[43]=0x10)
+[KWP TX ~b] 0xF4 (rx byte[44]=0x0B)
+[KWP TX ~b] 0xFB (rx byte[45]=0x04)
+[KWP TX ~b] 0xFF (rx byte[46]=0x00)
+[KWP TX ~b] 0xFF (rx byte[47]=0x00)
+[KWP TX ~b] 0xFF (rx byte[48]=0x00)
+[KWP RX END] 0x03 (total 50 bytes)
+[M4 HEADER group 2] (46 bytes)
+[KWP TX] Block Title=0x29 (ctr=47, len=5)...
+[KWP RX] Block Length=0x07 (7 bytes follow) -> TX ~len=0xF8
+[KWP TX ~b] 0xB7 (rx byte[1]=0x48)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0x32 (rx byte[3]=0xCD)
+[KWP TX ~b] 0xFA (rx byte[4]=0x05)
+[KWP TX ~b] 0x6B (rx byte[5]=0x94)
+[KWP TX ~b] 0xC6 (rx byte[6]=0x39)
+[KWP RX END] 0x03 (total 8 bytes)
+[M4 GROUP 2 BODY] (4 bytes): 
+CD 
+05 
+94 
+39 
+
+[M4 GROUP 2] header=46 body=4: 
+z1 f=8B raw=205 val=849.88; 
+z2 f=89 raw=5 val=2.50; 
+z3 f=85 raw=148 val=13.88; 
+z4 f=8C raw=57 val=22.38; 
+
+[KWP TX] Block Title=0x09 (ctr=49, len=4)...
+[KWP RX] Block Length=0x03 (3 bytes follow) -> TX ~len=0xFC
+[KWP TX ~b] 0xB5 (rx byte[1]=0x4A)
+[KWP TX ~b] 0xF6 (rx byte[2]=0x09)
+[KWP RX END] 0x03 (total 4 bytes)
+[KWP] RX ACK from ECU
+[KWP TX] Block Title=0x29 (ctr=4B, len=5)...
+[KWP RX] Block Length=0x20 (32 bytes follow) -> TX ~len=0xDF
+[KWP TX ~b] 0xB3 (rx byte[1]=0x4C)
+[KWP TX ~b] 0xFD (rx byte[2]=0x02)
+[KWP TX ~b] 0x74 (rx byte[3]=0x8B)
+[KWP TX ~b] 0xE5 (rx byte[4]=0x1A)
+[KWP TX ~b] 0xEE (rx byte[5]=0x11)
+[KWP TX ~b] 0x05 (rx byte[6]=0xFA)
+[KWP TX ~b] 0x1E (rx byte[7]=0xE1)
+[KWP TX ~b] 0x1F (rx byte[8]=0xE0)
+[KWP TX ~b] 0x43 (rx byte[9]=0xBC)
+[KWP TX ~b] 0x52 (rx byte[10]=0xAD)
+[KWP TX ~b] 0x69 (rx byte[11]=0x96)
+[KWP TX ~b] 0x7B (rx byte[12]=0x84)
+[KWP TX ~b] 0x8A (rx byte[13]=0x75)
+[KWP TX ~b] 0x9E (rx byte[14]=0x61)
+[KWP TX ~b] 0xAC (rx byte[15]=0x53)
+[KWP TX ~b] 0xB7 (rx byte[16]=0x48)
+[KWP TX ~b] 0xC6 (rx byte[17]=0x39)
+[KWP TX ~b] 0xD7 (rx byte[18]=0x28)
+[KWP TX ~b] 0xE0 (rx byte[19]=0x1F)
+[KWP TX ~b] 0xE6 (rx byte[20]=0x19)
+[KWP TX ~b] 0xED (rx byte[21]=0x12)
+[KWP TX ~b] 0xFF (rx byte[22]=0x00)
+[KWP TX ~b] 0x7E (rx byte[23]=0x81)
+[KWP TX ~b] 0x9B (rx byte[24]=0x64)
+[KWP TX ~b] 0xFF (rx byte[25]=0x00)
+[KWP TX ~b] 0x7B (rx byte[26]=0x84)
+[KWP TX ~b] 0xFD (rx byte[27]=0x02)
+[KWP TX ~b] 0xFF (rx byte[28]=0x00)
+[KWP TX ~b] 0x7E (rx byte[29]=0x81)
+[KWP TX ~b] 0x9B (rx byte[30]=0x64)
+[KWP TX ~b] 0xFF (rx byte[31]=0x00)
+[KWP RX END] 0x03 (total 33 bytes)
+[M4 HEADER group 3] (29 bytes)
+[KWP TX] Block Title=0x29 (ctr=4D, len=5)...
+[KWP RX] Block Length=0x07 (7 bytes follow) -> TX ~len=0xF8
+[KWP TX ~b] 0xB1 (rx byte[1]=0x4E)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0x33 (rx byte[3]=0xCC)
+[KWP TX ~b] 0xC6 (rx byte[4]=0x39)
+[KWP TX ~b] 0xFF (rx byte[5]=0x00)
+[KWP TX ~b] 0x90 (rx byte[6]=0x6F)
+[KWP RX END] 0x03 (total 8 bytes)
+[M4 GROUP 3 BODY] (4 bytes): 
+CC 
+39 
+00 
+6F 
+
+[M4 GROUP 3] header=29 body=4: 
+z1 f=8B raw=204 val=864.50; 
+z2 f=81 raw=57; 
+z3 f=84 raw=0; 
+z4 f=81 raw=111; 
+
+[KWP TX] Block Title=0x09 (ctr=4F, len=4)...
+[KWP RX] Block Length=0x03 (3 bytes follow) -> TX ~len=0xFC
+[KWP TX ~b] 0xAF (rx byte[1]=0x50)
+[KWP TX ~b] 0xF6 (rx byte[2]=0x09)
+[KWP RX END] 0x03 (total 4 bytes)
+[KWP] RX ACK from ECU
+[KWP TX] Block Title=0x29 (ctr=51, len=5)...
+[KWP RX] Block Length=0x20 (32 bytes follow) -> TX ~len=0xDF
+[KWP TX ~b] 0xAD (rx byte[1]=0x52)
+[KWP TX ~b] 0xFD (rx byte[2]=0x02)
+[KWP TX ~b] 0x74 (rx byte[3]=0x8B)
+[KWP TX ~b] 0xE5 (rx byte[4]=0x1A)
+[KWP TX ~b] 0xEE (rx byte[5]=0x11)
+[KWP TX ~b] 0x05 (rx byte[6]=0xFA)
+[KWP TX ~b] 0x1E (rx byte[7]=0xE1)
+[KWP TX ~b] 0x1F (rx byte[8]=0xE0)
+[KWP TX ~b] 0x43 (rx byte[9]=0xBC)
+[KWP TX ~b] 0x52 (rx byte[10]=0xAD)
+[KWP TX ~b] 0x69 (rx byte[11]=0x96)
+[KWP TX ~b] 0x7B (rx byte[12]=0x84)
+[KWP TX ~b] 0x8A (rx byte[13]=0x75)
+[KWP TX ~b] 0x9E (rx byte[14]=0x61)
+[KWP TX ~b] 0xAC (rx byte[15]=0x53)
+[KWP TX ~b] 0xB7 (rx byte[16]=0x48)
+[KWP TX ~b] 0xC6 (rx byte[17]=0x39)
+[KWP TX ~b] 0xD7 (rx byte[18]=0x28)
+[KWP TX ~b] 0xE0 (rx byte[19]=0x1F)
+[KWP TX ~b] 0xE6 (rx byte[20]=0x19)
+[KWP TX ~b] 0xED (rx byte[21]=0x12)
+[KWP TX ~b] 0xFF (rx byte[22]=0x00)
+[KWP TX ~b] 0x7E (rx byte[23]=0x81)
+[KWP TX ~b] 0x9B (rx byte[24]=0x64)
+[KWP TX ~b] 0xFF (rx byte[25]=0x00)
+[KWP TX ~b] 0x78 (rx byte[26]=0x87)
+[KWP TX ~b] 0xFE (rx byte[27]=0x01)
+[KWP TX ~b] 0xFF (rx byte[28]=0x00)
+[KWP TX ~b] 0x77 (rx byte[29]=0x88)
+[KWP TX ~b] 0x00 (rx byte[30]=0xFF)
+[KWP TX ~b] 0xFF (rx byte[31]=0x00)
+[KWP RX END] 0x03 (total 33 bytes)
+[M4 HEADER group 4] (29 bytes)
+[KWP TX] Block Title=0x29 (ctr=53, len=5)...
+[KWP RX] Block Length=0x07 (7 bytes follow) -> TX ~len=0xF8
+[KWP TX ~b] 0xAB (rx byte[1]=0x54)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0x33 (rx byte[3]=0xCC)
+[KWP TX ~b] 0xC7 (rx byte[4]=0x38)
+[KWP TX ~b] 0x00 (rx byte[5]=0xFF)
+[KWP TX ~b] 0xBF (rx byte[6]=0x40)
+[KWP RX END] 0x03 (total 8 bytes)
+[M4 GROUP 4 BODY] (4 bytes): 
+CC 
+38 
+FF 
+40 
+
+[M4 GROUP 4] header=29 body=4: 
+z1 f=8B raw=204 val=864.50; 
+z2 f=81 raw=56; 
+z3 f=87 raw=255; 
+z4 f=88 raw=64 val=64.00; 
+
+[KWP TX] Block Title=0x12 (ctr=55, len=4)...
+[KWP RX] Block Length=0x0D (13 bytes follow) -> TX ~len=0xF2
+[KWP TX ~b] 0xA9 (rx byte[1]=0x56)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0xC6 (rx byte[3]=0x39)
+[KWP TX ~b] 0x6B (rx byte[4]=0x94)
+[KWP TX ~b] 0xEC (rx byte[5]=0x13)
+[KWP TX ~b] 0xC7 (rx byte[6]=0x38)
+[KWP TX ~b] 0x87 (rx byte[7]=0x78)
+[KWP TX ~b] 0xFF (rx byte[8]=0x00)
+[KWP TX ~b] 0x80 (rx byte[9]=0x7F)
+[KWP TX ~b] 0xDB (rx byte[10]=0x24)
+[KWP TX ~b] 0xF9 (rx byte[11]=0x06)
+[KWP TX ~b] 0x31 (rx byte[12]=0xCE)
+[KWP RX END] 0x03 (total 14 bytes)
+[M4 GROUP 0 BODY] (10 bytes): 
+39 
+94 
+13 
+38 
+78 
+00 
+7F 
+24 
+06 
+CE 
+
+  -> RPM: 840 | Batt: 10.7V | G69 Drosselklappe: 18.0 deg (raw 0x24)
+  -> Motor: STOPPED (Flag 0x7F) | K??hlmittelRaw: 19 | IAT: 57 | Lambda: 120
+[KWP TX] Block Title=0x09 (ctr=57, len=4)...
+[KWP RX] Block Length=0x03 (3 bytes follow) -> TX ~len=0xFC
+[KWP TX ~b] 0xA7 (rx byte[1]=0x58)
+[KWP TX ~b] 0xF6 (rx byte[2]=0x09)
+[KWP RX END] 0x03 (total 4 bytes)
+[KWP] RX ACK from ECU
+[KWP TX] Block Title=0x29 (ctr=59, len=5)...
+[KWP RX] Block Length=0x31 (49 bytes follow) -> TX ~len=0xCE
+[KWP TX ~b] 0xA5 (rx byte[1]=0x5A)
+[KWP TX ~b] 0xFD (rx byte[2]=0x02)
+[KWP TX ~b] 0x74 (rx byte[3]=0x8B)
+[KWP TX ~b] 0xE5 (rx byte[4]=0x1A)
+[KWP TX ~b] 0xEE (rx byte[5]=0x11)
+[KWP TX ~b] 0x05 (rx byte[6]=0xFA)
+[KWP TX ~b] 0x1E (rx byte[7]=0xE1)
+[KWP TX ~b] 0x1F (rx byte[8]=0xE0)
+[KWP TX ~b] 0x43 (rx byte[9]=0xBC)
+[KWP TX ~b] 0x52 (rx byte[10]=0xAD)
+[KWP TX ~b] 0x69 (rx byte[11]=0x96)
+[KWP TX ~b] 0x7B (rx byte[12]=0x84)
+[KWP TX ~b] 0x8A (rx byte[13]=0x75)
+[KWP TX ~b] 0x9E (rx byte[14]=0x61)
+[KWP TX ~b] 0xAC (rx byte[15]=0x53)
+[KWP TX ~b] 0xB7 (rx byte[16]=0x48)
+[KWP TX ~b] 0xC6 (rx byte[17]=0x39)
+[KWP TX ~b] 0xD7 (rx byte[18]=0x28)
+[KWP TX ~b] 0xE0 (rx byte[19]=0x1F)
+[KWP TX ~b] 0xE6 (rx byte[20]=0x19)
+[KWP TX ~b] 0xED (rx byte[21]=0x12)
+[KWP TX ~b] 0xFF (rx byte[22]=0x00)
+[KWP TX ~b] 0x73 (rx byte[23]=0x8C)
+[KWP TX ~b] 0xD7 (rx byte[24]=0x28)
+[KWP TX ~b] 0xEE (rx byte[25]=0x11)
+[KWP TX ~b] 0x5F (rx byte[26]=0xA0)
+[KWP TX ~b] 0x9B (rx byte[27]=0x64)
+[KWP TX ~b] 0xAF (rx byte[28]=0x50)
+[KWP TX ~b] 0xBB (rx byte[29]=0x44)
+[KWP TX ~b] 0xC5 (rx byte[30]=0x3A)
+[KWP TX ~b] 0xCD (rx byte[31]=0x32)
+[KWP TX ~b] 0xD3 (rx byte[32]=0x2C)
+[KWP TX ~b] 0xD9 (rx byte[33]=0x26)
+[KWP TX ~b] 0xDE (rx byte[34]=0x21)
+[KWP TX ~b] 0xE4 (rx byte[35]=0x1B)
+[KWP TX ~b] 0xE9 (rx byte[36]=0x16)
+[KWP TX ~b] 0xEF (rx byte[37]=0x10)
+[KWP TX ~b] 0xF4 (rx byte[38]=0x0B)
+[KWP TX ~b] 0xFB (rx byte[39]=0x04)
+[KWP TX ~b] 0xFF (rx byte[40]=0x00)
+[KWP TX ~b] 0xFF (rx byte[41]=0x00)
+[KWP TX ~b] 0xFF (rx byte[42]=0x00)
+[KWP TX ~b] 0x7A (rx byte[43]=0x85)
+[KWP TX ~b] 0xFD (rx byte[44]=0x02)
+[KWP TX ~b] 0xFF (rx byte[45]=0x00)
+[KWP TX ~b] 0x77 (rx byte[46]=0x88)
+[KWP TX ~b] 0x00 (rx byte[47]=0xFF)
+[KWP TX ~b] 0xFF (rx byte[48]=0x00)
+[KWP RX END] 0x03 (total 50 bytes)
+[M4 HEADER group 1] (46 bytes)
+[KWP TX] Block Title=0x29 (ctr=5B, len=5)...
+[KWP RX] Block Length=0x07 (7 bytes follow) -> TX ~len=0xF8
+[KWP TX ~b] 0xA3 (rx byte[1]=0x5C)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0x32 (rx byte[3]=0xCD)
+[KWP TX ~b] 0xED (rx byte[4]=0x12)
+[KWP TX ~b] 0x9C (rx byte[5]=0x63)
+[KWP TX ~b] 0xF6 (rx byte[6]=0x09)
+[KWP RX END] 0x03 (total 8 bytes)
+[M4 GROUP 1 BODY] (4 bytes): 
+CD 
+12 
+63 
+09 
+
+[M4 GROUP 1] header=46 body=4: 
+z1 f=8B raw=205 val=849.88; 
+z2 f=8C raw=18 val=57.50; 
+z3 f=85 raw=99 val=0.77; 
+z4 f=88 raw=9 val=9.00; 
+
+[KWP TX] Block Title=0x09 (ctr=5D, len=4)...
+[KWP RX] Block Length=0x03 (3 bytes follow) -> TX ~len=0xFC
+[KWP TX ~b] 0xA1 (rx byte[1]=0x5E)
+[KWP TX ~b] 0xF6 (rx byte[2]=0x09)
+[KWP RX END] 0x03 (total 4 bytes)
+[KWP] RX ACK from ECU
+[KWP TX] Block Title=0x29 (ctr=5F, len=5)...
+[KWP RX] Block Length=0x31 (49 bytes follow) -> TX ~len=0xCE
+[KWP TX ~b] 0x9F (rx byte[1]=0x60)
+[KWP TX ~b] 0xFD (rx byte[2]=0x02)
+[KWP TX ~b] 0x74 (rx byte[3]=0x8B)
+[KWP TX ~b] 0xE5 (rx byte[4]=0x1A)
+[KWP TX ~b] 0xEE (rx byte[5]=0x11)
+[KWP TX ~b] 0x05 (rx byte[6]=0xFA)
+[KWP TX ~b] 0x1E (rx byte[7]=0xE1)
+[KWP TX ~b] 0x1F (rx byte[8]=0xE0)
+[KWP TX ~b] 0x43 (rx byte[9]=0xBC)
+[KWP TX ~b] 0x52 (rx byte[10]=0xAD)
+[KWP TX ~b] 0x69 (rx byte[11]=0x96)
+[KWP TX ~b] 0x7B (rx byte[12]=0x84)
+[KWP TX ~b] 0x8A (rx byte[13]=0x75)
+[KWP TX ~b] 0x9E (rx byte[14]=0x61)
+[KWP TX ~b] 0xAC (rx byte[15]=0x53)
+[KWP TX ~b] 0xB7 (rx byte[16]=0x48)
+[KWP TX ~b] 0xC6 (rx byte[17]=0x39)
+[KWP TX ~b] 0xD7 (rx byte[18]=0x28)
+[KWP TX ~b] 0xE0 (rx byte[19]=0x1F)
+[KWP TX ~b] 0xE6 (rx byte[20]=0x19)
+[KWP TX ~b] 0xED (rx byte[21]=0x12)
+[KWP TX ~b] 0xFF (rx byte[22]=0x00)
+[KWP TX ~b] 0x76 (rx byte[23]=0x89)
+[KWP TX ~b] 0xCD (rx byte[24]=0x32)
+[KWP TX ~b] 0xFF (rx byte[25]=0x00)
+[KWP TX ~b] 0x7A (rx byte[26]=0x85)
+[KWP TX ~b] 0xE7 (rx byte[27]=0x18)
+[KWP TX ~b] 0xFF (rx byte[28]=0x00)
+[KWP TX ~b] 0x73 (rx byte[29]=0x8C)
+[KWP TX ~b] 0xD7 (rx byte[30]=0x28)
+[KWP TX ~b] 0xEE (rx byte[31]=0x11)
+[KWP TX ~b] 0x5F (rx byte[32]=0xA0)
+[KWP TX ~b] 0x9B (rx byte[33]=0x64)
+[KWP TX ~b] 0xAF (rx byte[34]=0x50)
+[KWP TX ~b] 0xBB (rx byte[35]=0x44)
+[KWP TX ~b] 0xC5 (rx byte[36]=0x3A)
+[KWP TX ~b] 0xCD (rx byte[37]=0x32)
+[KWP TX ~b] 0xD3 (rx byte[38]=0x2C)
+[KWP TX ~b] 0xD9 (rx byte[39]=0x26)
+[KWP TX ~b] 0xDE (rx byte[40]=0x21)
+[KWP TX ~b] 0xE4 (rx byte[41]=0x1B)
+[KWP TX ~b] 0xE9 (rx byte[42]=0x16)
+[KWP TX ~b] 0xEF (rx byte[43]=0x10)
+[KWP TX ~b] 0xF4 (rx byte[44]=0x0B)
+[KWP TX ~b] 0xFB (rx byte[45]=0x04)
+[KWP TX ~b] 0xFF (rx byte[46]=0x00)
+[KWP TX ~b] 0xFF (rx byte[47]=0x00)
+[KWP TX ~b] 0xFF (rx byte[48]=0x00)
+[KWP RX END] 0x03 (total 50 bytes)
+[M4 HEADER group 2] (46 bytes)
+[KWP TX] Block Title=0x29 (ctr=61, len=5)...
+[KWP RX] Block Length=0x07 (7 bytes follow) -> TX ~len=0xF8
+[KWP TX ~b] 0x9D (rx byte[1]=0x62)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0x31 (rx byte[3]=0xCE)
+[KWP TX ~b] 0xFA (rx byte[4]=0x05)
+[KWP TX ~b] 0x6B (rx byte[5]=0x94)
+[KWP TX ~b] 0xC6 (rx byte[6]=0x39)
+[KWP RX END] 0x03 (total 8 bytes)
+[M4 GROUP 2 BODY] (4 bytes): 
+CE 
+05 
+94 
+39 
+
+[M4 GROUP 2] header=46 body=4: 
+z1 f=8B raw=206 val=835.25; 
+z2 f=89 raw=5 val=2.50; 
+z3 f=85 raw=148 val=13.88; 
+z4 f=8C raw=57 val=22.38; 
+
+[KWP TX] Block Title=0x09 (ctr=63, len=4)...
+[KWP RX] Block Length=0x03 (3 bytes follow) -> TX ~len=0xFC
+[KWP TX ~b] 0x9B (rx byte[1]=0x64)
+[KWP TX ~b] 0xF6 (rx byte[2]=0x09)
+[KWP RX END] 0x03 (total 4 bytes)
+[KWP] RX ACK from ECU
+[KWP TX] Block Title=0x29 (ctr=65, len=5)...
+[KWP RX] Block Length=0x20 (32 bytes follow) -> TX ~len=0xDF
+[KWP TX ~b] 0x99 (rx byte[1]=0x66)
+[KWP TX ~b] 0xFD (rx byte[2]=0x02)
+[KWP TX ~b] 0x74 (rx byte[3]=0x8B)
+[KWP TX ~b] 0xE5 (rx byte[4]=0x1A)
+[KWP TX ~b] 0xEE (rx byte[5]=0x11)
+[KWP TX ~b] 0x05 (rx byte[6]=0xFA)
+[KWP TX ~b] 0x1E (rx byte[7]=0xE1)
+[KWP TX ~b] 0x1F (rx byte[8]=0xE0)
+[KWP TX ~b] 0x43 (rx byte[9]=0xBC)
+[KWP TX ~b] 0x52 (rx byte[10]=0xAD)
+[KWP TX ~b] 0x69 (rx byte[11]=0x96)
+[KWP TX ~b] 0x7B (rx byte[12]=0x84)
+[KWP TX ~b] 0x8A (rx byte[13]=0x75)
+[KWP TX ~b] 0x9E (rx byte[14]=0x61)
+[KWP TX ~b] 0xAC (rx byte[15]=0x53)
+[KWP TX ~b] 0xB7 (rx byte[16]=0x48)
+[KWP TX ~b] 0xC6 (rx byte[17]=0x39)
+[KWP TX ~b] 0xD7 (rx byte[18]=0x28)
+[KWP TX ~b] 0xE0 (rx byte[19]=0x1F)
+[KWP TX ~b] 0xE6 (rx byte[20]=0x19)
+[KWP TX ~b] 0xED (rx byte[21]=0x12)
+[KWP TX ~b] 0xFF (rx byte[22]=0x00)
+[KWP TX ~b] 0x7E (rx byte[23]=0x81)
+[KWP TX ~b] 0x9B (rx byte[24]=0x64)
+[KWP TX ~b] 0xFF (rx byte[25]=0x00)
+[KWP TX ~b] 0x7B (rx byte[26]=0x84)
+[KWP TX ~b] 0xFD (rx byte[27]=0x02)
+[KWP TX ~b] 0xFF (rx byte[28]=0x00)
+[KWP TX ~b] 0x7E (rx byte[29]=0x81)
+[KWP TX ~b] 0x9B (rx byte[30]=0x64)
+[KWP TX ~b] 0xFF (rx byte[31]=0x00)
+[KWP RX END] 0x03 (total 33 bytes)
+[M4 HEADER group 3] (29 bytes)
+[KWP TX] Block Title=0x29 (ctr=67, len=5)...
+[KWP RX] Block Length=0x07 (7 bytes follow) -> TX ~len=0xF8
+[KWP TX ~b] 0x97 (rx byte[1]=0x68)
+[KWP TX ~b] 0x0B (rx byte[2]=0xF4)
+[KWP TX ~b] 0x33 (rx byte[3]=0xCC)
+[KWP TX ~b] 0xC7 (rx byte[4]=0x38)
+[KWP TX ~b] 0xFF (rx byte[5]=0x00)
+[KWP TX ~b] 0x91 (rx byte[6]=0x6E)
