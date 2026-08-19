@@ -108,15 +108,18 @@ void SimulatedLink::generateReplayFrame() {
     // Wenn es ein 14-Byte Frame ist (data[0] == 0x0D), ist es Gruppe 000!
     if (frame.data[0] == 0x0D && frame.length >= 14) {
       const uint8_t iatRaw = frame.data[3];
+      const uint8_t coPotRaw = frame.data[4];
       const uint8_t coolantRaw = frame.data[5];
       const uint8_t rpmRaw = frame.data[6];
+      const uint8_t lambdaRaw = frame.data[7];
       const uint8_t status = frame.data[8];
       const uint8_t runFlag = frame.data[9];
+      const uint8_t injRaw = frame.data[11];
       const uint16_t rpm = rpmRaw > 32 ? static_cast<uint16_t>(rpmRaw - 32) * 35 : 0;
-      dashboard.setGroup000(rpm, coolantRaw, iatRaw, status, runFlag);
+      dashboard.setGroup000(rpm, coolantRaw, iatRaw, status, runFlag, lambdaRaw, injRaw);
       dashboard.setStage(ConnStage::VERBUNDEN, "Verbunden (Messwertgruppe 000 empfangen)");
-      console.printf("[SIM M5] group000 status_raw=0x%02X engine=%s rpm=%u\n",
-                     status, runFlag == 0x00 ? "RUNNING" : "STOPPED", rpm);
+      console.printf("[SIM M5] group000 rpm=%u lambda=%u inj=%u status_raw=0x%02X engine=%s\n",
+                     rpm, lambdaRaw, injRaw, status, (runFlag & 0x80) == 0 ? "RUNNING" : "STOPPED");
     } else if (frame.group == 1 && frame.length >= 8) {
       // Gruppe 001 Body
       dashboard.setStage(ConnStage::VERBUNDEN, "Verbunden (Gruppe 001: Kuehlmittel / IAT)");

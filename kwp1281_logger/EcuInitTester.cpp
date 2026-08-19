@@ -262,15 +262,15 @@ void EcuInitTester::parseBlock(const uint8_t *data, size_t len) {
       uint8_t finalRaw = payload[9];
 
       int rpmEst = (rpmRaw > 32) ? (rpmRaw - 32) * 35 : 0;
-      bool engineRunning = (runFlagRaw == 0x00);
+      bool engineRunning = (runFlagRaw & 0x80) == 0;
 
       console.printf("  -> RPM: %d | Gruppe000 raw[7]=0x%02X raw[9]=0x%02X\n",
              rpmEst, group000Raw, finalRaw);
       console.printf("  -> Motor: %s (Flag 0x%02X) | KühlmittelRaw: %u | IAT: %u | Lambda: %u | CO-Pot: %u | InjRaw: %u | StatusRaw: 0x%02X\n",
              engineRunning ? "RUNNING" : "STOPPED", runFlagRaw, coolantRaw,
              iatRaw, lambdaRaw, coPotRaw, injRaw, statusRaw);
-          dashboard.setGroup000(static_cast<uint16_t>(rpmEst), coolantRaw, iatRaw,
-                    statusRaw, runFlagRaw);
+      dashboard.setGroup000(static_cast<uint16_t>(rpmEst), coolantRaw, iatRaw,
+                            statusRaw, runFlagRaw, lambdaRaw, injRaw);
     }
   } else if (title == 0x02) {
     if (_measurementGroup >= 1 && _measurementGroup <= 4 && payloadLen <= 64) {

@@ -25,9 +25,12 @@ public:
   void update();
 
   void setGroup000(uint16_t rpm, uint8_t coolantRaw, uint8_t iatRaw,
-                   uint8_t statusRaw, uint8_t runFlagRaw);
+                   uint8_t statusRaw, uint8_t runFlagRaw,
+                   uint8_t lambdaRaw = 128, uint8_t injRaw = 0);
   void setBattery(float volts);
   void setG69(uint8_t raw);
+  void setLambda(uint8_t raw);
+  void setInjTime(uint8_t raw);
   void setEcuInfo(const String &info);
 
   void setMode(const String &mode);
@@ -49,18 +52,21 @@ private:
   void selectTab(uint8_t tab);
   void handleTouch();
 
-  // Instrument-Renderfunktionen (zeichnen flackerfrei in das bereitgestellte Kachel-Sprite)
+  // Instrument-Renderfunktionen (8 Kacheln: 4 Spalten x 2 Zeilen)
   void drawGaugeRPM(LGFX_Sprite &s, int16_t w, int16_t h);
   void drawMotorStatusMatrix(LGFX_Sprite &s, int16_t w, int16_t h);
   void drawGaugeBattery(LGFX_Sprite &s, int16_t w, int16_t h);
   void drawThrottleValve(LGFX_Sprite &s, int16_t w, int16_t h);
   void drawThermometerCoolant(LGFX_Sprite &s, int16_t w, int16_t h);
   void drawThermometerIAT(LGFX_Sprite &s, int16_t w, int16_t h);
+  void drawLambdaCard(LGFX_Sprite &s, int16_t w, int16_t h);
+  void drawInjectionCard(LGFX_Sprite &s, int16_t w, int16_t h);
 
   LGFX_Sprite _tileSprite{&M5.Display};
   LGFX_Sprite _statusSprite{&M5.Display};
   LGFX_Sprite _tab2CardSprite{&M5.Display};
   LGFX_Sprite _logSprite{&M5.Display};
+  LGFX_Sprite _scopeSprite{&M5.Display};
   bool _spritesCreated = false;
 
   uint8_t _tab = 0;
@@ -75,6 +81,8 @@ private:
   uint8_t _statusRaw = 0;
   uint8_t _runFlagRaw = 0x00;
   uint8_t _g69Raw = 0;
+  uint8_t _lambdaRaw = 128;
+  uint8_t _injRaw = 4;
   float _battery = 13.7f;
   uint32_t _blockCount = 0;
   String _ecuInfo = "037906024AG DIGIFANT 1.7 1576";

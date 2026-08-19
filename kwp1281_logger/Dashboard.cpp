@@ -73,9 +73,9 @@ void Dashboard::begin() {
     M5.Display.setRotation((M5.Display.getRotation() + 1) & 3);
   }
 
-  // Kachel-Sprites im PSRAM anlegen
-  const int16_t gap = 16;
-  const int16_t cols = 3;
+  // Kachel-Sprites im PSRAM anlegen (4 Spalten x 2 Zeilen = 8 Kacheln)
+  const int16_t gap = 12;
+  const int16_t cols = 4;
   const int16_t tileW = (M5.Display.width() - 2 * kMargin - (cols - 1) * gap) / cols;
   const int16_t tileH = (M5.Display.height() - kContentTop - kMargin - gap) / 2;
 
@@ -96,6 +96,13 @@ void Dashboard::begin() {
   const int16_t logW = M5.Display.width() - 2 * kMargin;
   _logSprite.setPsram(true);
   _logSprite.createSprite(logW, logH);
+
+  // Tab 3 Messschrieb-Sprite im PSRAM fuer 100% flackerfreies Rendern
+  const int16_t scopeY = kContentTop + 8;
+  const int16_t scopeH = M5.Display.height() - scopeY - kMargin;
+  const int16_t scopeW = M5.Display.width() - 2 * kMargin;
+  _scopeSprite.setPsram(true);
+  _scopeSprite.createSprite(scopeW, scopeH);
 
   _spritesCreated = true;
   _needFullClear = true;
@@ -128,13 +135,16 @@ void Dashboard::update() {
 }
 
 void Dashboard::setGroup000(uint16_t rpm, uint8_t coolantRaw, uint8_t iatRaw,
-                            uint8_t statusRaw, uint8_t runFlagRaw) {
+                            uint8_t statusRaw, uint8_t runFlagRaw,
+                            uint8_t lambdaRaw, uint8_t injRaw) {
   _rpm = rpm;
   _coolantRaw = coolantRaw;
   _iatRaw = iatRaw;
   _statusRaw = statusRaw;
   _runFlagRaw = runFlagRaw;
-  _running = runFlagRaw == 0x00;
+  _lambdaRaw = lambdaRaw;
+  _injRaw = injRaw;
+  _running = (runFlagRaw & 0x80) == 0;
   _dirty = true;
 }
 
@@ -145,6 +155,16 @@ void Dashboard::setBattery(float volts) {
 
 void Dashboard::setG69(uint8_t raw) {
   _g69Raw = raw;
+  _dirty = true;
+}
+
+void Dashboard::setLambda(uint8_t raw) {
+  _lambdaRaw = raw;
+  _dirty = true;
+}
+
+void Dashboard::setInjTime(uint8_t raw) {
+  _injRaw = raw;
   _dirty = true;
 }
 
@@ -338,7 +358,7 @@ void Dashboard::drawMotorStatusMatrix(LGFX_Sprite &s, int16_t w, int16_t h) {
     "START",
     "LEERLAUF",
     "TEILLAST",
-    "VOLLE LAST",
+    "VOLLLAST",
     "SCHUB"
   };
 
@@ -359,13 +379,13 @@ void Dashboard::drawMotorStatusMatrix(LGFX_Sprite &s, int16_t w, int16_t h) {
     activeIdx = 2;
   }
 
-  const int16_t rowStartX = 16;
+  const int16_t rowStartX = 12;
   const int16_t rowStartY = 54;
-  const int16_t itemH = 26;
-  const int16_t itemW = w - 32;
+  const int16_t itemH = 25;
+  const int16_t itemW = w - 24;
 
   for (uint8_t i = 0; i < 6; ++i) {
-    int16_t iy = rowStartY + i * (itemH + 3);
+    int16_t iy = rowStartY + i * (itemH + 2);
     bool isActive = (i == activeIdx);
     uint16_t bg = isActive ? (_running ? TFT_DARKGREEN : TFT_ORANGE) : TFT_BLACK;
     uint16_t fg = isActive ? TFT_WHITE : TFT_LIGHTGREY;
@@ -376,13 +396,13 @@ void Dashboard::drawMotorStatusMatrix(LGFX_Sprite &s, int16_t w, int16_t h) {
 
     s.setTextSize(2);
     s.setTextColor(fg, bg);
-    s.setCursor(rowStartX + 10, iy + 5);
+    s.setCursor(rowStartX + 6, iy + 4);
     s.print(isActive ? ">> " : "   ");
     s.print(states[i]);
   }
 
   char foot[32];
-  snprintf(foot, sizeof(foot), "RunFlag: 0x%02X | Stat: 0x%02X", _runFlagRaw, _statusRaw);
+  snprintf(foot, sizeof(foot), "Run: 0x%02X | Stat: 0x%02X", _runFlagRaw, _statusRaw);
   drawFooter(s, h, foot);
 }
 
@@ -452,31 +472,31 @@ void Dashboard::drawGaugeBattery(LGFX_Sprite &s, int16_t w, int16_t h) {
 }
 
 // =============================================================================
-// KACHEL 4: DROSSELKLAPPE (STAKLAPPE IM ROHR MIT WINKEL IN GRAD)
+// KACHEL 4: DROSSELKLAPPE G69 (VERTIKAL MITTIG AUSGERICHTET)
 // =============================================================================
 void Dashboard::drawThrottleValve(LGFX_Sprite &s, int16_t w, int16_t h) {
-  drawCardFrame(s, w, h, TFT_CYAN, "DROSSELKLAPPE G69", "Winkelstellung");
+  drawCardFrame(s, w, h, TFT_CYAN, "DROSSELKLAPPE", "Geber G69");
 
-  const int16_t pipeX = 24;
-  const int16_t pipeY = 62;
-  const int16_t pipeW = 160;
-  const int16_t pipeH = 104;
+  const int16_t pipeW = w - 40;
+  const int16_t pipeH = 68;
+  const int16_t pipeX = (w - pipeW) / 2;
+  const int16_t pipeY = 56;
   const int16_t cx = pipeX + pipeW / 2;
   const int16_t cy = pipeY + pipeH / 2;
 
   s.fillRect(pipeX, pipeY, pipeW, pipeH, TFT_BLACK);
-  s.fillRect(pipeX, pipeY, pipeW, 4, TFT_WHITE);
-  s.fillRect(pipeX, pipeY + pipeH - 4, pipeW, 4, TFT_WHITE);
+  s.fillRect(pipeX, pipeY, pipeW, 3, TFT_WHITE);
+  s.fillRect(pipeX, pipeY + pipeH - 3, pipeW, 3, TFT_WHITE);
   s.drawFastVLine(pipeX, pipeY, pipeH, TFT_DARKGREY);
   s.drawFastVLine(pipeX + pipeW - 1, pipeY, pipeH, TFT_DARKGREY);
 
-  s.drawLine(pipeX + 16, cy, pipeX + 36, cy, TFT_DARKGREY);
-  s.drawLine(pipeX + 30, cy - 6, pipeX + 36, cy, TFT_DARKGREY);
-  s.drawLine(pipeX + 30, cy + 6, pipeX + 36, cy, TFT_DARKGREY);
+  s.drawLine(pipeX + 12, cy, pipeX + 28, cy, TFT_DARKGREY);
+  s.drawLine(pipeX + 22, cy - 5, pipeX + 28, cy, TFT_DARKGREY);
+  s.drawLine(pipeX + 22, cy + 5, pipeX + 28, cy, TFT_DARKGREY);
 
   float deg = rawToG69Deg(_g69Raw);
   float flapVisualAngleRad = (90.0f - deg) * (M_PI / 180.0f);
-  const int16_t flapHalfLen = 44;
+  const int16_t flapHalfLen = 30;
 
   int16_t fx1 = cx - static_cast<int16_t>(cos(flapVisualAngleRad) * flapHalfLen);
   int16_t fy1 = cy - static_cast<int16_t>(sin(flapVisualAngleRad) * flapHalfLen);
@@ -488,178 +508,278 @@ void Dashboard::drawThrottleValve(LGFX_Sprite &s, int16_t w, int16_t h) {
   s.drawLine(fx1 - 1, fy1, fx2 - 1, fy2, TFT_CYAN);
   s.drawLine(fx1, fy1 + 1, fx2, fy2 + 1, TFT_CYAN);
   s.drawLine(fx1 - 1, fy1, fx2 - 1, fy2, TFT_CYAN);
-  s.fillCircle(cx, cy, 6, TFT_YELLOW);
+  s.fillCircle(cx, cy, 5, TFT_YELLOW);
 
-  const int16_t rx = pipeX + pipeW + 16;
-  s.setTextSize(5);
-  s.setTextColor(TFT_WHITE, TFT_DARKGREY);
-  s.setCursor(rx, 68);
+  // Wert GROSS zentriert UNTER der Rohrdarstellung
   char degBuf[16];
   snprintf(degBuf, sizeof(degBuf), "%.1f", deg);
+  s.setTextSize(4);
+  s.setTextColor(TFT_WHITE, TFT_DARKGREY);
+  int16_t valW = strlen(degBuf) * 24;
+  int16_t totalBlockW = valW + 14 + 48; // Zahl + Symbol + "Grad"
+  int16_t valX = (w - totalBlockW) / 2;
+  int16_t valY = pipeY + pipeH + 12;
+  s.setCursor(valX, valY);
   s.print(degBuf);
 
-  int16_t degX = rx + strlen(degBuf) * 30 + 4;
-  int16_t degY = 72;
-  s.drawCircle(degX + 5, degY + 5, 5, TFT_CYAN);
-  s.drawCircle(degX + 5, degY + 5, 4, TFT_CYAN);
+  int16_t degCircleX = valX + valW + 4;
+  s.drawCircle(degCircleX + 4, valY + 4, 4, TFT_CYAN);
+  s.drawCircle(degCircleX + 4, valY + 4, 3, TFT_CYAN);
 
   s.setTextSize(2);
   s.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
-  s.setCursor(rx, 128);
-  s.print("Klappenwinkel");
+  s.setCursor(degCircleX + 16, valY + 10);
+  s.print("Grad");
 
   char foot[32];
-  snprintf(foot, sizeof(foot), "Raw: %u | Grp 003 Zone 3", _g69Raw);
+  snprintf(foot, sizeof(foot), "Raw: %u | Grp 003 Z3", _g69Raw);
   drawFooter(s, h, foot);
 }
 
 // =============================================================================
-// KACHEL 5: KUEHLMITTELTEMPERATUR (GROSSES THERMOMETER IN °C)
+// KACHEL 5: KUEHLMITTELTEMPERATUR (KOMPAKT, MITTIG AUSGERICHTET)
 // =============================================================================
 void Dashboard::drawThermometerCoolant(LGFX_Sprite &s, int16_t w, int16_t h) {
   drawCardFrame(s, w, h, TFT_SKYBLUE, "KUEHLMITTEL", "Motortemperatur");
 
   float tempC = rawToCoolantTemp(_coolantRaw);
 
-  const int16_t tx = 34;
-  const int16_t ty = 68;
-  const int16_t th = 120;
-  const int16_t tw = 22;
+  const int16_t tx = 28;
+  const int16_t ty = 52;
+  const int16_t th = 138;
+  const int16_t tw = 18;
 
   s.fillRoundRect(tx, ty, tw, th, tw / 2, TFT_BLACK);
   s.drawRoundRect(tx, ty, tw, th, tw / 2, TFT_LIGHTGREY);
-  s.fillCircle(tx + tw / 2, ty + th + 14, 20, TFT_BLACK);
-  s.drawCircle(tx + tw / 2, ty + th + 14, 20, TFT_LIGHTGREY);
+  s.fillCircle(tx + tw / 2, ty + th + 12, 16, TFT_BLACK);
+  s.drawCircle(tx + tw / 2, ty + th + 12, 16, TFT_LIGHTGREY);
 
   float tempClamped = tempC < -20.0f ? -20.0f : (tempC > 120.0f ? 120.0f : tempC);
   float frac = (tempClamped + 20.0f) / 140.0f;
   int16_t fillH = static_cast<int16_t>(frac * (th - 6));
   uint16_t col = (tempC > 105.0f) ? TFT_RED : ((tempC > 70.0f) ? TFT_GREEN : TFT_BLUE);
 
-  s.fillCircle(tx + tw / 2, ty + th + 14, 17, col);
+  s.fillCircle(tx + tw / 2, ty + th + 12, 14, col);
   if (fillH > 0) {
-    s.fillRoundRect(tx + 4, ty + th - fillH, tw - 8, fillH + 12, (tw - 8) / 2, col);
+    s.fillRoundRect(tx + 3, ty + th - fillH, tw - 6, fillH + 10, (tw - 6) / 2, col);
   }
 
-  const int marks[] = {0, 50, 90, 120};
-  for (int t : marks) {
-    float f = (t + 20.0f) / 140.0f;
-    int16_t sy = ty + th - static_cast<int16_t>(f * th);
-    s.drawLine(tx + tw + 2, sy, tx + tw + 14, sy, TFT_LIGHTGREY);
-    s.setTextSize(2);
-    s.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
-    s.setCursor(tx + tw + 18, sy - 6);
-    s.print(t);
-  }
-
-  const int16_t rx = 168;
-  s.setTextSize(5);
+  // Wert rechts vertikal mittig
+  const int16_t rx = tx + tw + 20;
+  s.setTextSize(4);
   s.setTextColor(TFT_WHITE, TFT_DARKGREY);
-  s.setCursor(rx, 68);
+  s.setCursor(rx, 80);
   char tBuf[16];
   snprintf(tBuf, sizeof(tBuf), "%.1f", tempC);
   s.print(tBuf);
 
-  int16_t degX = rx + strlen(tBuf) * 30 + 4;
-  int16_t degY = 72;
-  s.drawCircle(degX + 4, degY + 4, 4, TFT_SKYBLUE);
-  s.drawCircle(degX + 4, degY + 4, 3, TFT_SKYBLUE);
-  s.setTextSize(4);
+  int16_t degX = rx + strlen(tBuf) * 24 + 4;
+  int16_t degY = 84;
+  s.drawCircle(degX + 3, degY + 3, 3, TFT_SKYBLUE);
+  s.drawCircle(degX + 3, degY + 3, 2, TFT_SKYBLUE);
+  s.setTextSize(3);
   s.setTextColor(TFT_SKYBLUE, TFT_DARKGREY);
-  s.setCursor(degX + 16, 74);
+  s.setCursor(degX + 12, 84);
   s.print("C");
 
   s.setTextSize(2);
-  s.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
-  s.setCursor(rx, 128);
+  s.setCursor(rx, 134);
   if (tempC >= 80.0f && tempC <= 100.0f) {
     s.setTextColor(TFT_GREEN, TFT_DARKGREY);
-    s.print("BETRIEBSTEMP. OK");
+    s.print("BETRIEB OK");
   } else if (tempC > 105.0f) {
     s.setTextColor(TFT_RED, TFT_DARKGREY);
-    s.print("UEBERHITZUNG");
+    s.print("HEISS");
   } else {
     s.setTextColor(TFT_BLUE, TFT_DARKGREY);
     s.print("WARMLAUF");
   }
 
   char foot[32];
-  snprintf(foot, sizeof(foot), "Raw: %u | Formel: 0x8C", _coolantRaw);
+  snprintf(foot, sizeof(foot), "Raw: %u | Formel 0x8C", _coolantRaw);
   drawFooter(s, h, foot);
 }
 
 // =============================================================================
-// KACHEL 6: ANSAUGLUFTTEMPERATUR (IAT) (GROSSES THERMOMETER IN °C)
+// KACHEL 6: ANSAUGLUFTTEMPERATUR (IAT) (KOMPAKT, MITTIG AUSGERICHTET)
 // =============================================================================
 void Dashboard::drawThermometerIAT(LGFX_Sprite &s, int16_t w, int16_t h) {
-  drawCardFrame(s, w, h, TFT_SKYBLUE, "ANSAUGLUFT (IAT)", "Geber G42");
+  drawCardFrame(s, w, h, TFT_SKYBLUE, "ANSAUGLUFT", "Geber G42");
 
   float tempC = rawToIatTemp(_iatRaw);
 
-  const int16_t tx = 34;
-  const int16_t ty = 68;
-  const int16_t th = 120;
-  const int16_t tw = 22;
+  const int16_t tx = 28;
+  const int16_t ty = 52;
+  const int16_t th = 138;
+  const int16_t tw = 18;
 
   s.fillRoundRect(tx, ty, tw, th, tw / 2, TFT_BLACK);
   s.drawRoundRect(tx, ty, tw, th, tw / 2, TFT_LIGHTGREY);
-  s.fillCircle(tx + tw / 2, ty + th + 14, 20, TFT_BLACK);
-  s.drawCircle(tx + tw / 2, ty + th + 14, 20, TFT_LIGHTGREY);
+  s.fillCircle(tx + tw / 2, ty + th + 12, 16, TFT_BLACK);
+  s.drawCircle(tx + tw / 2, ty + th + 12, 16, TFT_LIGHTGREY);
 
   float tempClamped = tempC < -20.0f ? -20.0f : (tempC > 100.0f ? 100.0f : tempC);
   float frac = (tempClamped + 20.0f) / 120.0f;
   int16_t fillH = static_cast<int16_t>(frac * (th - 6));
   uint16_t col = (tempC > 60.0f) ? TFT_ORANGE : TFT_CYAN;
 
-  s.fillCircle(tx + tw / 2, ty + th + 14, 17, col);
+  s.fillCircle(tx + tw / 2, ty + th + 12, 14, col);
   if (fillH > 0) {
-    s.fillRoundRect(tx + 4, ty + th - fillH, tw - 8, fillH + 12, (tw - 8) / 2, col);
+    s.fillRoundRect(tx + 3, ty + th - fillH, tw - 6, fillH + 10, (tw - 6) / 2, col);
   }
 
-  const int marks[] = {0, 30, 60, 90};
-  for (int t : marks) {
-    float f = (t + 20.0f) / 120.0f;
-    int16_t sy = ty + th - static_cast<int16_t>(f * th);
-    s.drawLine(tx + tw + 2, sy, tx + tw + 14, sy, TFT_LIGHTGREY);
-    s.setTextSize(2);
-    s.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
-    s.setCursor(tx + tw + 18, sy - 6);
-    s.print(t);
-  }
-
-  const int16_t rx = 168;
-  s.setTextSize(5);
+  const int16_t rx = tx + tw + 20;
+  s.setTextSize(4);
   s.setTextColor(TFT_WHITE, TFT_DARKGREY);
-  s.setCursor(rx, 68);
+  s.setCursor(rx, 80);
   char tBuf[16];
   snprintf(tBuf, sizeof(tBuf), "%.1f", tempC);
   s.print(tBuf);
 
-  int16_t degX = rx + strlen(tBuf) * 30 + 4;
-  int16_t degY = 72;
-  s.drawCircle(degX + 4, degY + 4, 4, TFT_SKYBLUE);
-  s.drawCircle(degX + 4, degY + 4, 3, TFT_SKYBLUE);
-  s.setTextSize(4);
+  int16_t degX = rx + strlen(tBuf) * 24 + 4;
+  int16_t degY = 84;
+  s.drawCircle(degX + 3, degY + 3, 3, TFT_SKYBLUE);
+  s.drawCircle(degX + 3, degY + 3, 2, TFT_SKYBLUE);
+  s.setTextSize(3);
   s.setTextColor(TFT_SKYBLUE, TFT_DARKGREY);
-  s.setCursor(degX + 16, 74);
+  s.setCursor(degX + 12, 84);
   s.print("C");
 
   s.setTextSize(2);
   s.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
-  s.setCursor(rx, 128);
-  s.print("ANSAUGLUFT NORMAL");
+  s.setCursor(rx, 134);
+  s.print("NORMAL");
 
   char foot[32];
-  snprintf(foot, sizeof(foot), "Raw: %u | Formel: 0x8C", _iatRaw);
+  snprintf(foot, sizeof(foot), "Raw: %u | Formel 0x8C", _iatRaw);
   drawFooter(s, h, foot);
 }
 
 // =============================================================================
-// TAB 1: GESAMT-WERTEANSICHT (6 KACHELN)
+// KACHEL 7: LAMBDA-REGELUNG (MITTIG AUSGERICHTET)
+// =============================================================================
+void Dashboard::drawLambdaCard(LGFX_Sprite &s, int16_t w, int16_t h) {
+  // Lambda 128 = 1.000. Rechnerischer Lambda-Faktor ca. raw / 128.0f
+  float lambdaEst = _lambdaRaw > 0 ? (_lambdaRaw / 128.0f) : 1.0f;
+  bool isLambdaOk = (_lambdaRaw >= 115 && _lambdaRaw <= 145);
+  uint16_t cardCol = isLambdaOk ? TFT_GREEN : (_lambdaRaw < 115 ? TFT_CYAN : TFT_ORANGE);
+
+  drawCardFrame(s, w, h, cardCol, "LAMBDA (O2S)", "Regelwert");
+
+  // Grosser Lambda-Wert vertikal mittig
+  s.setTextSize(4);
+  s.setTextColor(TFT_WHITE, TFT_DARKGREY);
+  char lBuf[16];
+  snprintf(lBuf, sizeof(lBuf), "%.3f", lambdaEst);
+  int16_t lw = strlen(lBuf) * 24;
+  int16_t lx = (w - lw) / 2;
+  s.setCursor(lx, 66);
+  s.print(lBuf);
+
+  // Horizontaler Regelbalken (Mitte 128)
+  const int16_t barW = w - 40;
+  const int16_t barX = (w - barW) / 2;
+  const int16_t barY = 118;
+  const int16_t barH = 16;
+
+  s.fillRoundRect(barX, barY, barW, barH, 4, TFT_BLACK);
+  s.drawRoundRect(barX, barY, barW, barH, 4, TFT_LIGHTGREY);
+  // Markierung Mitte (128)
+  s.drawFastVLine(barX + barW / 2, barY - 2, barH + 4, TFT_WHITE);
+
+  // Positionsanzeiger
+  int16_t pos = barX + static_cast<int16_t>((static_cast<float>(_lambdaRaw) / 255.0f) * barW);
+  if (pos < barX + 3) pos = barX + 3;
+  if (pos > barX + barW - 5) pos = barX + barW - 5;
+  s.fillRoundRect(pos - 3, barY - 3, 6, barH + 6, 2, cardCol);
+
+  s.setTextSize(2);
+  const char *statText = "LAMBDA = 1.0 (OK)";
+  if (_lambdaRaw < 115) {
+    s.setTextColor(TFT_CYAN, TFT_DARKGREY);
+    statText = "MAGER (FETT REG.)";
+  } else if (_lambdaRaw > 145) {
+    s.setTextColor(TFT_ORANGE, TFT_DARKGREY);
+    statText = "FETT (MAGER REG.)";
+  } else {
+    s.setTextColor(TFT_GREEN, TFT_DARKGREY);
+  }
+  int16_t txtW = strlen(statText) * 12;
+  s.setCursor((w - txtW) / 2, 146);
+  s.print(statText);
+
+  char foot[32];
+  snprintf(foot, sizeof(foot), "Raw: %u | Mitte: 128", _lambdaRaw);
+  drawFooter(s, h, foot);
+}
+
+// =============================================================================
+// KACHEL 8: EINSPRITZZEIT / LAST (ti) (MITTIG AUSGERICHTET)
+// =============================================================================
+void Dashboard::drawInjectionCard(LGFX_Sprite &s, int16_t w, int16_t h) {
+  drawCardFrame(s, w, h, TFT_MAGENTA, "EINSPRITZUNG", "Grundeinspritzzeit ti");
+
+  // Große Darstellung von InjRaw
+  char iBuf[16];
+  snprintf(iBuf, sizeof(iBuf), "%u", _injRaw);
+  int16_t iw = strlen(iBuf) * 30;
+  int16_t totalW = iw + 8 + 36;
+  int16_t ix = (w - totalW) / 2;
+
+  s.setTextSize(5);
+  s.setTextColor(TFT_WHITE, TFT_DARKGREY);
+  s.setCursor(ix, 60);
+  s.print(iBuf);
+
+  s.setTextSize(3);
+  s.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
+  s.setCursor(ix + iw + 8, 74);
+  s.print("raw");
+
+  // Dynamischer Lastbalken
+  const int16_t barW = w - 40;
+  const int16_t barX = (w - barW) / 2;
+  const int16_t barY = 118;
+  const int16_t barH = 16;
+
+  s.fillRoundRect(barX, barY, barW, barH, 4, TFT_BLACK);
+  s.drawRoundRect(barX, barY, barW, barH, 4, TFT_LIGHTGREY);
+
+  float loadFrac = static_cast<float>(_injRaw) / 30.0f;
+  if (loadFrac > 1.0f) loadFrac = 1.0f;
+  int16_t fillW = static_cast<int16_t>(loadFrac * (barW - 4));
+  if (fillW > 0) {
+    uint16_t col = (_injRaw > 15) ? TFT_RED : ((_injRaw > 8) ? TFT_YELLOW : TFT_MAGENTA);
+    s.fillRoundRect(barX + 2, barY + 2, fillW, barH - 4, 2, col);
+  }
+
+  s.setTextSize(2);
+  const char *loadText = "LEERLAUFLAST";
+  if (!_running || _injRaw == 0) {
+    s.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
+    loadText = "SCHUB / AUS";
+  } else if (_injRaw <= 6) {
+    s.setTextColor(TFT_GREEN, TFT_DARKGREY);
+    loadText = "LEERLAUFLAST";
+  } else {
+    s.setTextColor(TFT_YELLOW, TFT_DARKGREY);
+    loadText = "TEILLAST / BESCHL.";
+  }
+  int16_t loadTxtW = strlen(loadText) * 12;
+  s.setCursor((w - loadTxtW) / 2, 146);
+  s.print(loadText);
+
+  char foot[32];
+  snprintf(foot, sizeof(foot), "Raw: %u | Grp 000 F9", _injRaw);
+  drawFooter(s, h, foot);
+}
+
+// =============================================================================
+// TAB 1: GESAMT-WERTEANSICHT (8 KACHELN: 4 SPALTEN x 2 ZEILEN)
 // =============================================================================
 void Dashboard::drawValues() {
-  const int16_t gap = 16;
-  const int16_t cols = 3;
+  const int16_t gap = 12;
+  const int16_t cols = 4;
   const int16_t w = (M5.Display.width() - 2 * kMargin - (cols - 1) * gap) / cols;
   const int16_t h = (M5.Display.height() - kContentTop - kMargin - gap) / 2;
   const int16_t row1Y = kContentTop + 8;
@@ -667,29 +787,39 @@ void Dashboard::drawValues() {
 
   auto colX = [&](int16_t col) { return static_cast<int16_t>(kMargin + col * (w + gap)); };
 
-  // Kachel 1: DREHZAHL
-  drawGaugeRPM(_tileSprite, w, h);
+  // Zeile 1:
+  // Kachel 1 (Col 0): MOTORSTATUS (oben links!)
+  drawMotorStatusMatrix(_tileSprite, w, h);
   _tileSprite.pushSprite(colX(0), row1Y);
 
-  // Kachel 2: MOTORSTATUS
-  drawMotorStatusMatrix(_tileSprite, w, h);
+  // Kachel 2 (Col 1): DREHZAHL (getauscht mit Motorstatus)
+  drawGaugeRPM(_tileSprite, w, h);
   _tileSprite.pushSprite(colX(1), row1Y);
 
-  // Kachel 3: BATTERIE
+  // Kachel 3 (Col 2): BATTERIE
   drawGaugeBattery(_tileSprite, w, h);
   _tileSprite.pushSprite(colX(2), row1Y);
 
-  // Kachel 4: DROSSELKLAPPE
+  // Kachel 4 (Col 3): DROSSELKLAPPE
   drawThrottleValve(_tileSprite, w, h);
+  _tileSprite.pushSprite(colX(3), row1Y);
+
+  // Zeile 2:
+  // Kachel 5 (Col 0): KUEHLMITTEL
+  drawThermometerCoolant(_tileSprite, w, h);
   _tileSprite.pushSprite(colX(0), row2Y);
 
-  // Kachel 5: KUEHLMITTEL
-  drawThermometerCoolant(_tileSprite, w, h);
+  // Kachel 6 (Col 1): ANSAUGLUFT
+  drawThermometerIAT(_tileSprite, w, h);
   _tileSprite.pushSprite(colX(1), row2Y);
 
-  // Kachel 6: ANSAUGLUFT
-  drawThermometerIAT(_tileSprite, w, h);
+  // Kachel 7 (Col 2): LAMBDA
+  drawLambdaCard(_tileSprite, w, h);
   _tileSprite.pushSprite(colX(2), row2Y);
+
+  // Kachel 8 (Col 3): EINSPRITZUNG
+  drawInjectionCard(_tileSprite, w, h);
+  _tileSprite.pushSprite(colX(3), row2Y);
 }
 
 // =============================================================================
@@ -789,31 +919,37 @@ void Dashboard::drawInfo() {
 }
 
 // =============================================================================
-// TAB 3: MESSSCHRIEB (MOTORSIGNALE UEBER ZEIT)
+// TAB 3: MESSSCHRIEB (FLACKERFREI UEBER _scopeSprite)
 // =============================================================================
 void Dashboard::drawScope() {
   const int16_t y0 = kContentTop + 8;
-  M5.Display.fillRoundRect(kMargin, y0, M5.Display.width() - 2 * kMargin,
-                           M5.Display.height() - y0 - kMargin, 12, TFT_DARKGREY);
-  M5.Display.drawRoundRect(kMargin, y0, M5.Display.width() - 2 * kMargin,
-                           M5.Display.height() - y0 - kMargin, 12, TFT_MAGENTA);
-  M5.Display.setTextSize(3);
-  M5.Display.setTextColor(TFT_WHITE, TFT_DARKGREY);
-  M5.Display.setCursor(kMargin + 24, y0 + 60);
-  M5.Display.println("Vorbereitung fuer Meilenstein M6 (Testfahrt)");
-  M5.Display.setTextSize(2);
-  M5.Display.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
-  M5.Display.setCursor(kMargin + 24, y0 + 110);
-  M5.Display.println("- Drehzahlverlauf (RPM) live grafisch zeichnen");
-  M5.Display.setCursor(kMargin + 24, y0 + 140);
-  M5.Display.println("- G69 Drosselklappenstellung in Grad ueber Zeit");
-  M5.Display.setCursor(kMargin + 24, y0 + 170);
-  M5.Display.println("- Leerlauf- und Schubabschaltungsphasen farbig markieren");
-  M5.Display.setCursor(kMargin + 24, y0 + 200);
-  M5.Display.println("- Korrelation Bergabfahrt / Ruckeln / Schubbetrieb");
-  M5.Display.setCursor(kMargin + 24, y0 + 240);
-  M5.Display.setTextColor(TFT_CYAN, TFT_DARKGREY);
-  M5.Display.println("Graph wird bei Beginn der Testfahrt automatisch aktiviert.");
+  const int16_t scopeW = M5.Display.width() - 2 * kMargin;
+  const int16_t scopeH = M5.Display.height() - y0 - kMargin;
+
+  _scopeSprite.fillScreen(TFT_BLACK);
+  _scopeSprite.fillRoundRect(0, 0, scopeW, scopeH, 12, TFT_DARKGREY);
+  _scopeSprite.drawRoundRect(0, 0, scopeW, scopeH, 12, TFT_MAGENTA);
+
+  _scopeSprite.setTextSize(3);
+  _scopeSprite.setTextColor(TFT_WHITE, TFT_DARKGREY);
+  _scopeSprite.setCursor(24, 40);
+  _scopeSprite.println("Vorbereitung fuer Meilenstein M6 (Testfahrt)");
+
+  _scopeSprite.setTextSize(2);
+  _scopeSprite.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
+  _scopeSprite.setCursor(24, 90);
+  _scopeSprite.println("- Drehzahlverlauf (RPM) live grafisch zeichnen");
+  _scopeSprite.setCursor(24, 120);
+  _scopeSprite.println("- G69 Drosselklappenstellung in Grad ueber Zeit");
+  _scopeSprite.setCursor(24, 150);
+  _scopeSprite.println("- Leerlauf- und Schubabschaltungsphasen farbig markieren");
+  _scopeSprite.setCursor(24, 180);
+  _scopeSprite.println("- Korrelation Bergabfahrt / Ruckeln / Schubbetrieb");
+  _scopeSprite.setCursor(24, 220);
+  _scopeSprite.setTextColor(TFT_CYAN, TFT_DARKGREY);
+  _scopeSprite.println("Graph wird bei Beginn der Testfahrt automatisch aktiviert.");
+
+  _scopeSprite.pushSprite(kMargin, y0);
 }
 
 void Dashboard::selectTab(uint8_t tab) {

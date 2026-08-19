@@ -11,32 +11,37 @@
 // =============================================================================
 // KONFIGURATION & BETRIEBSMODUS
 // =============================================================================
-// Wähle hier bequem den Betriebsmodus:
-//   MODE_SIMULATION: Läuft ohne Hardware mit simulierter ECU (Desktop/Trockentest)
-//   MODE_HARDWARE_M2_TEST: Hardware-Rohdatentest (Sendet Testbytes 55 01 00)
-//   MODE_HARDWARE_ECU_INIT: M3-Initialisierung am Fahrzeug (5-Baud-Init -> 9600 Baud)
+// Wähle hier den Betriebsmodus:
+//   MODE_SIMULATION_REPLAY   (1): Autonome Simulation mit Replay-Daten (Trockentest ohne Hardware)
+//   MODE_RAW_LOOPBACK_TEST   (2): Hardware-Rohdaten-/Verbindungstest (Sendet Testbytes über USB/K-Line)
+//   MODE_KWP1281_LIVE_DIAG   (3): Echte Fahrzeugdiagnose via KWP1281 (5-Baud-Init, Handshake, Messwerte)
 // -----------------------------------------------------------------------------
-#define MODE_SIMULATION        1
-#define MODE_HARDWARE_M2_TEST  2
-#define MODE_HARDWARE_ECU_INIT 3
+#define MODE_SIMULATION_REPLAY 1
+#define MODE_RAW_LOOPBACK_TEST 2
+#define MODE_KWP1281_LIVE_DIAG 3
+
+// Aliase für Abwärtskompatibilität bestehender Compiler-Flags / Skripte
+#define MODE_SIMULATION        MODE_SIMULATION_REPLAY
+#define MODE_HARDWARE_M2_TEST  MODE_RAW_LOOPBACK_TEST
+#define MODE_HARDWARE_ECU_INIT MODE_KWP1281_LIVE_DIAG
 
 // >> HIER DEN AKTIVEN MODUS EINSTELLEN (oder per Compiler-Flag überschreiben):
 #ifndef APP_MODE
-  #define APP_MODE MODE_SIMULATION
+  #define APP_MODE MODE_SIMULATION_REPLAY
 #endif
 
 // Abwärtskompatibilität für Compiler-Flags
-#if (APP_MODE == MODE_SIMULATION)
+#if (APP_MODE == MODE_SIMULATION_REPLAY)
   #define SIMULATION_MODE true
   #define ECU_INIT_TEST   false
-#elif (APP_MODE == MODE_HARDWARE_M2_TEST)
+#elif (APP_MODE == MODE_RAW_LOOPBACK_TEST)
   #define SIMULATION_MODE false
   #define ECU_INIT_TEST   false
-#elif (APP_MODE == MODE_HARDWARE_ECU_INIT)
+#elif (APP_MODE == MODE_KWP1281_LIVE_DIAG)
   #define SIMULATION_MODE false
   #define ECU_INIT_TEST   true
 #else
-  #error "Ungültiger APP_MODE ausgewählt! Bitte MODE_SIMULATION, MODE_HARDWARE_M2_TEST oder MODE_HARDWARE_ECU_INIT wählen."
+  #error "Ungültiger APP_MODE ausgewählt! Bitte MODE_SIMULATION_REPLAY (1), MODE_RAW_LOOPBACK_TEST (2) oder MODE_KWP1281_LIVE_DIAG (3) wählen."
 #endif
 
 #if SIMULATION_MODE
@@ -79,15 +84,15 @@ bool g_linkReady = false;
 static void printBanner() {
   console.println(kBannerSep);
   console.println("M5Tab5 KWP1281 Logger / Tester");
-#if (APP_MODE == MODE_SIMULATION)
-  console.println("Modus: SIMULATION (Trockentest ohne HW)");
-  dashboard.setMode("SIMULATION (Replay-Daten)");
-#elif (APP_MODE == MODE_HARDWARE_M2_TEST)
-  console.println("Modus: HARDWARE M2 (Rohdaten-Verbindungstest)");
-  dashboard.setMode("HARDWARE M2 (AutoDia K409, Rohdatentest)");
-#elif (APP_MODE == MODE_HARDWARE_ECU_INIT)
-  console.println("Modus: HARDWARE ECU INIT (M3 Fahrzeugtest 5-Baud)");
-  dashboard.setMode("HARDWARE (AutoDia K409, KWP1281)");
+#if (APP_MODE == MODE_SIMULATION_REPLAY)
+  console.println("Modus: SIMULATION (Replay-Daten ohne Hardware)");
+  dashboard.setMode("SIMULATION (Replay)");
+#elif (APP_MODE == MODE_RAW_LOOPBACK_TEST)
+  console.println("Modus: ROHDATEN-TEST (AutoDia K409 Loopback)");
+  dashboard.setMode("ROHDATEN-TEST (K409)");
+#elif (APP_MODE == MODE_KWP1281_LIVE_DIAG)
+  console.println("Modus: KWP1281 LIVE (Fahrzeugdiagnose 1200 Baud)");
+  dashboard.setMode("KWP1281 LIVE (AutoDia K409)");
 #endif
   console.println(kBannerSep);
 }
