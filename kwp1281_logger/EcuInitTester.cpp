@@ -118,17 +118,16 @@ bool EcuInitTester::sendBlockWithHandshake(uint8_t title, const uint8_t *payload
     // Byte senden
     _link.write(&b, 1);
 
-    // 1. Eigenes K-Line TX-Echo abwarten und verwerfen
-    if (!waitForByte(b, 60)) {
+    // 1. Eigenes K-Line TX-Echo abwarten und verwerfen (K-Line Transceiver spiegelt TX auf RX)
+    if (!waitForByte(b, 100)) {
       console.printf("[KWP TX] Echo timeout for byte 0x%02X\n", b);
     }
 
     // 2. Für alle Bytes AUSSER dem letzten (0x03) antwortet die ECU mit ~b
     if (i < totalBytes - 1) {
       const uint8_t expectedAck = static_cast<uint8_t>(~b);
-      if (!waitForByte(expectedAck, 180)) {
-        console.printf("[KWP TX] Missing ACK 0x%02X for byte 0x%02X\n", expectedAck, b);
-        return false;
+      if (!waitForByte(expectedAck, 350)) {
+        console.printf("[KWP TX] Warning: no ~b ACK for tx byte 0x%02X (exp 0x%02X)\n", b, expectedAck);
       }
     }
   }
@@ -526,6 +525,7 @@ void EcuInitTester::update() {
             if (!_identFinished) {
               if (title == 0x09) {
                 _identFinished = true;
+                dashboard.setStage(ConnStage::VERBUNDEN, "Verbunden (Messwerte aktiv)");
                 console.println("\n[M4] IDENT FINISHED; starting groups 000..004");
                 _measurementGroup = 0;
                 requestMeasurementGroup();
@@ -568,6 +568,9 @@ void EcuInitTester::update() {
 
       if (now - _lastTxTime >= 4000) {
         console.println("[KWP] Session Timeout -> Restarting Init");
+        _rxBlockPos = 0;
+        _expectedLen = 0;
+        _pendingRxEcho = false;
         enterState(State::ERROR_);
       }
       break;

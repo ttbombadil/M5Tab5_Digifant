@@ -27,7 +27,7 @@
 
 // >> HIER DEN AKTIVEN MODUS EINSTELLEN (oder per Compiler-Flag überschreiben):
 #ifndef APP_MODE
-  #define APP_MODE MODE_SIMULATION_REPLAY
+  #define APP_MODE MODE_KWP1281_LIVE_DIAG
 #endif
 
 // Abwärtskompatibilität für Compiler-Flags
