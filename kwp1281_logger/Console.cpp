@@ -27,25 +27,33 @@ void Console::begin(uint8_t textSize) {
   }
   _visibleLines = static_cast<uint8_t>(visible);
 
-  _lineCount = 0;
+  _head = 0;
+  _count = 0;
   _ready = true;
 }
 
-void Console::println(const String &line) {
-  Serial.println(line);
+void Console::println(const char *line) {
+  if (line != nullptr) {
+    Serial.println(line);
+  } else {
+    Serial.println();
+  }
 
   if (!_ready) {
     // Vor begin() nur seriell ausgeben, kein Display-Zugriff.
     return;
   }
 
-  if (_lineCount < kBufferLines) {
-    _lines[_lineCount++] = line;
+  if (line != nullptr) {
+    strncpy(_lines[_head], line, kMaxLineLen - 1);
+    _lines[_head][kMaxLineLen - 1] = '\0';
   } else {
-    for (uint8_t i = 1; i < kBufferLines; ++i) {
-      _lines[i - 1] = _lines[i];
-    }
-    _lines[kBufferLines - 1] = line;
+    _lines[_head][0] = '\0';
+  }
+
+  _head = (_head + 1) % kBufferLines;
+  if (_count < kBufferLines) {
+    _count++;
   }
 
   // Kein Redraw hier! Das Display-Update wird auf update() verschoben,
@@ -54,12 +62,25 @@ void Console::println(const String &line) {
   _dirty = true;
 }
 
+void Console::println(const String &line) {
+  println(line.c_str());
+}
+
 void Console::println() {
-  println(String());
+  println(static_cast<const char*>(nullptr));
+}
+
+const char* Console::getLine(uint8_t index) const {
+  if (index >= _count) {
+    return "";
+  }
+  uint8_t start = (_count == kBufferLines) ? _head : 0;
+  uint8_t actualIdx = (start + index) % kBufferLines;
+  return _lines[actualIdx];
 }
 
 void Console::printf(const char *fmt, ...) {
-  char buffer[200];
+  char buffer[kMaxLineLen];
 
   va_list args;
   va_start(args, fmt);
@@ -73,7 +94,7 @@ void Console::printf(const char *fmt, ...) {
     buffer[--len] = '\0';
   }
 
-  println(String(buffer));
+  println(buffer);
 }
 
 void Console::update() {
@@ -94,9 +115,9 @@ void Console::redraw() {
   M5.Display.fillScreen(TFT_BLACK);
   M5.Display.setCursor(0, 0);
 
-  uint8_t start = (_lineCount > _visibleLines) ? (_lineCount - _visibleLines) : 0;
-  for (uint8_t i = start; i < _lineCount; ++i) {
-    M5.Display.println(_lines[i]);
+  uint8_t start = (_count > _visibleLines) ? (_count - _visibleLines) : 0;
+  for (uint8_t i = start; i < _count; ++i) {
+    M5.Display.println(getLine(i));
   }
 
   M5.Display.endWrite();

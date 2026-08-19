@@ -22,6 +22,7 @@ public:
   // Muss aufgerufen werden, NACHDEM M5.begin() gelaufen ist.
   void begin(uint8_t textSize = 3);
 
+  void println(const char *line);
   void println(const String &line);
   // Leere Zeile ausgeben (analog zu Serial.println() ohne Argumente).
   void println();
@@ -37,17 +38,19 @@ public:
   void update();
   void setDisplayEnabled(bool enabled) { _displayEnabled = enabled; }
 
-  uint8_t getLineCount() const { return _lineCount; }
-  const String& getLine(uint8_t index) const { return _lines[index]; }
+  uint8_t getLineCount() const { return _count; }
+  const char* getLine(uint8_t index) const;
 
 private:
   void redraw();
 
   static constexpr uint8_t kBufferLines = 40;
+  static constexpr size_t kMaxLineLen = 96;
   static constexpr uint32_t kMinRedrawIntervalMs = 100;
 
-  String _lines[kBufferLines];
-  uint8_t _lineCount = 0;
+  char _lines[kBufferLines][kMaxLineLen];
+  uint8_t _head = 0;
+  uint8_t _count = 0;
   uint8_t _visibleLines = 12;
   bool _ready = false;
   bool _dirty = false;

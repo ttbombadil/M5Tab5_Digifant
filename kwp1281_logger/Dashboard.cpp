@@ -18,11 +18,12 @@ const uint8_t kTempTable8C[17] = {
 };
 
 float decodeTemp8C(uint8_t mwb) {
-  uint8_t idx = mwb / 16;
+  uint8_t idx = mwb >> 4;
   if (idx > 15) idx = 15;
-  uint8_t left = kTempTable8C[idx];
-  uint8_t right = (idx < 16) ? kTempTable8C[idx + 1] : kTempTable8C[16];
-  float interpolated = left + (right - left) * (mwb % 16) / 16.0f;
+  const int16_t left = static_cast<int16_t>(kTempTable8C[idx]);
+  const int16_t right = (idx < 16) ? static_cast<int16_t>(kTempTable8C[idx + 1]) : static_cast<int16_t>(kTempTable8C[16]);
+  const uint8_t frac = mwb & 0x0F;
+  const float interpolated = static_cast<float>(left) + static_cast<float>(right - left) * (frac / 16.0f);
   return interpolated - 40.0f;
 }
 
