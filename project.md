@@ -74,7 +74,7 @@ entkoppelt; `Console::update()` wird separat aus `loop()` aufgerufen.
 
 ## Aktueller Implementierungsstand
 
-Der aktuelle Arduino-Prototyp liegt in `kwp1281_logger/` und besteht aus:
+Der aktuelle Arduino-Prototyp liegt in `M5Tab5_Digifant_Proto/` und besteht aus:
 
 - `SerialLink`: gemeinsames Interface für byteorientierte Verbindungen
 - `SimulatedLink`: autonomer Testtransport ohne Fahrzeughardware
@@ -82,7 +82,7 @@ Der aktuelle Arduino-Prototyp liegt in `kwp1281_logger/` und besteht aus:
 - `ConnectivityTester`: periodischer Rohdaten-/Verbindungstest
 - `EcuInitTester`: nichtblockierende Zustandsmaschine für 5-Baud-Init, Keybytes, KWP1281-Handshake und Blockempfang
 - `Console`: Ausgabe auf Serial und Tab5-Display mit verzögertem, gedrosseltem Redraw
-- `kwp1281_logger.ino`: Auswahl des Transport- und Testmodus sowie Hauptschleife
+- `M5Tab5_Digifant_Proto.ino`: Auswahl des Transport- und Testmodus sowie Hauptschleife
 
 Die Live-Verifikation am Fahrzeug hat M1 bis M3 technisch bestätigt:
 
@@ -160,7 +160,7 @@ Decoder- und Logging-Tests. Die weitere Verwendung erfolgt in drei Schritten:
         Capture bleibt unverändert und dient als Vergleichsbasis.
 
 Die Replay-Integration ist umgesetzt: `SimulatedLink` verwendet jetzt ein
-Firmware-Profil aus `kwp1281_logger/ReplayData.h`. Das Profil basiert auf
+Firmware-Profil aus `M5Tab5_Digifant_Proto/ReplayData.h`. Das Profil basiert auf
 `captures/engine_running_corrected_replay.csv`, wird request-getrieben nach
 der simulierten Antwortverzögerung ausgegeben und nach dem letzten Block
 zyklisch wieder ab dem ersten Block verwendet. Damit werden sowohl die
@@ -179,7 +179,7 @@ Zustandsvergleich mit Motor aus/Zündung ein enthält.
 
 ### Touch-Dashboard (Querformat, 1280×720)
 
-Die Live-Anzeige (`kwp1281_logger/Dashboard.h/.cpp`) läuft explizit im
+Die Live-Anzeige (`M5Tab5_Digifant_Proto/Dashboard.h/.cpp`) läuft explizit im
 Querformat und verwendet nun eine vollwertige Instrumenten-Darstellung:
 
 1. **Drehzahl:** Großes Rundinstrument (Radius 108 px, 0–5000 U/min) mit Analogzeiger, Farbzonen mit einheitlichem `TFT_GREEN`, Skalenbeschriftung (0..5k) und Digitalwert.

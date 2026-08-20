@@ -29,18 +29,18 @@ float decodeTemp8C(uint8_t mwb) {
 
 void drawCardFrame(LGFX_Sprite &s, int16_t w, int16_t h, uint16_t color,
                    const char *label, const char *sub = nullptr) {
-  s.fillScreen(TFT_BLACK);
-  s.fillRoundRect(0, 0, w, h, 12, TFT_DARKGREY);
+  s.fillScreen(0x0000); // TFT_BLACK (#000000)
+  s.fillRoundRect(0, 0, w, h, 12, 0x10A2); // TFT_DARKGREY (#141414)
   s.drawRoundRect(0, 0, w, h, 12, color);
   s.drawRoundRect(1, 1, w - 2, h - 2, 12, color);
 
   s.setTextSize(2);
-  s.setTextColor(TFT_WHITE, TFT_DARKGREY);
+  s.setTextColor(TFT_WHITE, 0x10A2); // TFT_WHITE, TFT_DARKGREY (#141414)
   s.setCursor(14, 12);
   s.print(label);
 
   if (sub != nullptr) {
-    s.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
+    s.setTextColor(0x8410, 0x10A2); // TFT_LIGHTGREY (#888888), TFT_DARKGREY (#141414)
     s.setCursor(14, 32);
     s.print(sub);
   }
@@ -258,16 +258,16 @@ void Dashboard::drawTabs() {
     const int16_t x = i * width;
     const bool active = (i == _tab);
     M5.Display.fillRect(x, 0, width - 2, kTabHeight,
-                        active ? TFT_DARKCYAN : TFT_DARKGREY);
+                        active ? 0x10A2 : 0x2965); // TFT_DARKGREY (#141414) / TFT_DARKGREY (#2C2C2C)
     M5.Display.setTextSize(3);
-    M5.Display.setTextColor(TFT_WHITE, active ? TFT_DARKCYAN : TFT_DARKGREY);
+    M5.Display.setTextColor(TFT_WHITE, active ? 0x10A2 : 0x2965);
     M5.Display.setCursor(x + 24, 14);
     M5.Display.print(names[i]);
   }
 }
 
 void Dashboard::drawStatusBar() {
-  _statusSprite.fillScreen(TFT_NAVY);
+  _statusSprite.fillScreen(0x0000); // TFT_BLACK (#000000)
 
   const char *steps[] = {"1. BEREIT", "2. 5-BAUD", "3. HANDSHAKE", "4. IDENT", "5. VERBUNDEN"};
   const uint8_t currentStepIdx = static_cast<uint8_t>(_stage);
@@ -279,22 +279,22 @@ void Dashboard::drawStatusBar() {
 
   for (uint8_t i = 0; i < 5; ++i) {
     const int16_t sx = kMargin + i * (stepW + stepGap);
-    uint16_t bg = TFT_DARKGREY;
-    uint16_t fg = TFT_LIGHTGREY;
-    uint16_t border = TFT_LIGHTGREY;
+    uint16_t bg = 0x2965; // TFT_DARKGREY (#2C2C2C)
+    uint16_t fg = 0x8410; // TFT_LIGHTGREY (#888888)
+    uint16_t border = 0x2965; // TFT_DARKGREY (#2C2C2C)
 
     if (_stage == ConnStage::FEHLER) {
       if (i == currentStepIdx || i == 4) {
-        bg = TFT_RED;
+        bg = 0xF8A4; // TFT_RED (#FF1744)
         fg = TFT_WHITE;
         border = TFT_WHITE;
       }
     } else if (i < currentStepIdx) {
-      bg = TFT_DARKGREEN;
+      bg = 0x072E; // TFT_GREEN (#00E676)
       fg = TFT_WHITE;
-      border = TFT_GREEN;
+      border = 0x072E; // TFT_GREEN (#00E676)
     } else if (i == currentStepIdx) {
-      bg = TFT_CYAN;
+      bg = 0x2BCF; // TFT_BLUE (#2979FF)
       fg = TFT_BLACK;
       border = TFT_WHITE;
     }
@@ -312,12 +312,12 @@ void Dashboard::drawStatusBar() {
 
   const int16_t infoY = stepY + stepH + 6;
   _statusSprite.setTextSize(2);
-  _statusSprite.setTextColor(TFT_YELLOW, TFT_NAVY);
+  _statusSprite.setTextColor(0xFD60, 0x0000); // TFT_AMBER (#FFB300), TFT_BLACK
   _statusSprite.setCursor(kMargin + 4, infoY);
   _statusSprite.print("[");
   _statusSprite.print(_mode);
   _statusSprite.print("] ");
-  _statusSprite.setTextColor(TFT_WHITE, TFT_NAVY);
+  _statusSprite.setTextColor(TFT_WHITE, 0x0000); // TFT_WHITE, TFT_BLACK
   _statusSprite.print(_state);
 
   _statusSprite.pushSprite(0, kTabHeight);
@@ -327,7 +327,7 @@ void Dashboard::drawStatusBar() {
 // KACHEL 1: DREHZAHL ALS DREHINSTRUMENT (0 - 5000 RPM)
 // =============================================================================
 void Dashboard::drawGaugeRPM(LGFX_Sprite &s, int16_t w, int16_t h) {
-  drawCardFrame(s, w, h, TFT_GREEN, "DREHZAHL", "0 - 5000 RPM");
+  drawCardFrame(s, w, h, 0x072E, "DREHZAHL", "0 - 5000 RPM"); // TFT_GREEN (#00E676)
 
   const int16_t cx = w / 2;
   const int16_t cy = h / 2 + 14;
@@ -339,7 +339,7 @@ void Dashboard::drawGaugeRPM(LGFX_Sprite &s, int16_t w, int16_t h) {
     int16_t y1 = cy + static_cast<int16_t>(sin(rad) * (r - 20));
     int16_t x2 = cx + static_cast<int16_t>(cos(rad) * r);
     int16_t y2 = cy + static_cast<int16_t>(sin(rad) * r);
-    uint16_t col = (angle > 351) ? TFT_RED : ((angle > 297) ? TFT_YELLOW : TFT_GREEN);
+    uint16_t col = (angle > 351) ? 0xF8A4 : ((angle > 297) ? 0xFD60 : 0x072E); // TFT_RED, TFT_AMBER, TFT_GREEN
     s.drawLine(x1, y1, x2, y2, col);
   }
 
@@ -349,7 +349,7 @@ void Dashboard::drawGaugeRPM(LGFX_Sprite &s, int16_t w, int16_t h) {
     int16_t tx = cx + static_cast<int16_t>(cos(rad) * (r - 34));
     int16_t ty = cy + static_cast<int16_t>(sin(rad) * (r - 34));
     s.setTextSize(2);
-    s.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
+    s.setTextColor(0x8410, 0x2965); // TFT_LIGHTGREY, TFT_DARKGREY
     s.setCursor(tx - 6, ty - 6);
     s.print(rpmMark / 1000);
   }
@@ -365,10 +365,10 @@ void Dashboard::drawGaugeRPM(LGFX_Sprite &s, int16_t w, int16_t h) {
   s.drawLine(cx - 1, cy, nx - 1, ny, TFT_WHITE);
   s.drawLine(cx, cy + 1, nx, ny + 1, TFT_WHITE);
   s.drawLine(cx - 1, cy, nx - 1, ny, TFT_WHITE);
-  s.fillCircle(cx, cy, 10, TFT_RED);
+  s.fillCircle(cx, cy, 10, 0x072E); // TFT_GREEN
 
   s.setTextSize(4);
-  s.setTextColor(TFT_WHITE, TFT_DARKGREY);
+  s.setTextColor(TFT_WHITE, 0x2965); // TFT_WHITE, TFT_DARKGREY
   char valBuf[16];
   snprintf(valBuf, sizeof(valBuf), "%u", _rpm);
   int16_t tw = strlen(valBuf) * 24;
@@ -376,7 +376,7 @@ void Dashboard::drawGaugeRPM(LGFX_Sprite &s, int16_t w, int16_t h) {
   s.print(valBuf);
 
   s.setTextSize(2);
-  s.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
+  s.setTextColor(0x8410, 0x2965); // TFT_LIGHTGREY, TFT_DARKGREY
   s.setCursor(cx - 30, cy + 66);
   s.print("U/min");
 
@@ -449,7 +449,7 @@ void Dashboard::drawMotorStatusMatrix(LGFX_Sprite &s, int16_t w, int16_t h) {
 // KACHEL 3: BATTERIESPANNUNG ALS DREHINSTRUMENT (10 - 16V)
 // =============================================================================
 void Dashboard::drawGaugeBattery(LGFX_Sprite &s, int16_t w, int16_t h) {
-  drawCardFrame(s, w, h, TFT_YELLOW, "BATTERIESPANNUNG", "10 - 16 Volt");
+  drawCardFrame(s, w, h, 0xFD60, "BATTERIESPANNUNG", "10 - 16 Volt"); // TFT_AMBER (#FFB300)
 
   const int16_t cx = w / 2;
   const int16_t cy = h / 2 + 14;
@@ -462,8 +462,8 @@ void Dashboard::drawGaugeBattery(LGFX_Sprite &s, int16_t w, int16_t h) {
     int16_t x2 = cx + static_cast<int16_t>(cos(rad) * r);
     int16_t y2 = cy + static_cast<int16_t>(sin(rad) * r);
     float vAtAngle = 10.0f + (angle - 135) * (6.0f / 270.0f);
-    uint16_t col = (vAtAngle < 11.8f || vAtAngle > 15.0f) ? TFT_RED :
-                   ((vAtAngle < 12.6f) ? TFT_YELLOW : TFT_GREEN);
+    uint16_t col = (vAtAngle < 11.8f || vAtAngle > 15.0f) ? 0xF8A4 : // TFT_RED (#FF1744)
+                   ((vAtAngle < 12.6f) ? 0xFD60 : 0x072E); // TFT_AMBER / TFT_GREEN
     s.drawLine(x1, y1, x2, y2, col);
   }
 
@@ -473,7 +473,7 @@ void Dashboard::drawGaugeBattery(LGFX_Sprite &s, int16_t w, int16_t h) {
     int16_t tx = cx + static_cast<int16_t>(cos(rad) * (r - 34));
     int16_t ty = cy + static_cast<int16_t>(sin(rad) * (r - 34));
     s.setTextSize(2);
-    s.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
+    s.setTextColor(0x8410, 0x10A2); // TFT_LIGHTGREY, TFT_DARKGREY
     s.setCursor(tx - 8, ty - 6);
     s.print(vMark);
   }
@@ -489,10 +489,10 @@ void Dashboard::drawGaugeBattery(LGFX_Sprite &s, int16_t w, int16_t h) {
   s.drawLine(cx - 1, cy, nx - 1, ny, TFT_WHITE);
   s.drawLine(cx, cy + 1, nx, ny + 1, TFT_WHITE);
   s.drawLine(cx - 1, cy, nx - 1, ny, TFT_WHITE);
-  s.fillCircle(cx, cy, 10, TFT_YELLOW);
+  s.fillCircle(cx, cy, 10, 0xFD60); // TFT_AMBER
 
   s.setTextSize(4);
-  s.setTextColor(TFT_WHITE, TFT_DARKGREY);
+  s.setTextColor(TFT_WHITE, 0x10A2); // TFT_WHITE, TFT_DARKGREY
   char valBuf[16];
   snprintf(valBuf, sizeof(valBuf), "%.2f", _battery);
   int16_t tw = strlen(valBuf) * 24;
@@ -500,7 +500,7 @@ void Dashboard::drawGaugeBattery(LGFX_Sprite &s, int16_t w, int16_t h) {
   s.print(valBuf);
 
   s.setTextSize(2);
-  s.setTextColor(TFT_LIGHTGREY, TFT_DARKGREY);
+  s.setTextColor(0x8410, 0x10A2); // TFT_LIGHTGREY, TFT_DARKGREY
   s.setCursor(cx - 24, cy + 66);
   s.print("Volt");
 

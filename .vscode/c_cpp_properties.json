@@ -12,7 +12,7 @@
             ],
             "intelliSenseMode": "gcc-x64",
             "includePath": [
-                "/Users/to/sciebo/TT_ESP32/M5Tab5_AutoDia/kwp1281_logger",
+                "/Users/to/sciebo/TT_ESP32/M5Tab5_AutoDia/M5Tab5_Digifant_Proto",
                 "/Users/to/Library/Arduino15/packages/esp32/tools/esp32p4_es-libs/3.3.10/qio_qspi/include",
                 "/Users/to/Library/Arduino15/packages/esp32/hardware/esp32/3.3.10/cores/esp32",
                 "/Users/to/Library/Arduino15/packages/esp32/hardware/esp32/3.3.10/variants/m5stack_tab5",
