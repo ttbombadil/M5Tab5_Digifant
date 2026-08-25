@@ -1,8 +1,8 @@
 {
     "files.exclude": {
-        "build": true,
-        ".vscode": true,
-        "build_usb_check": true,
-        "tools": true
+        "build": false,
+        ".vscode": false,
+        "build_usb_check": false,
+        "tools": false
     }
 }

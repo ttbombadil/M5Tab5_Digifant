@@ -1,0 +1,45 @@
+#include "../src/digifant_decoder.h"
+#include "../src/kwp_application_parser.h"
+
+#include <cassert>
+#include <cmath>
+
+using namespace digifant::domain;
+
+int main() {
+  const uint8_t header_bytes[] = {
+      0x31, 0x12, 0x02, 0x8B, 0x1A, 0x11, 0xFA, 0xE1, 0xE0, 0xBC,
+      0xAD, 0x96, 0x84, 0x75, 0x61, 0x53, 0x48, 0x39, 0x28, 0x1F,
+      0x19, 0x12, 0x00, 0x89, 0x32, 0x00, 0x85, 0x18, 0x00, 0x8C,
+      0x28, 0x11, 0xA0, 0x64, 0x50, 0x44, 0x3A, 0x32, 0x2C, 0x26,
+      0x21, 0x1B, 0x16, 0x10, 0x0B, 0x04, 0x00, 0x00, 0x00, 0x03};
+  const uint8_t body_bytes[] = {0x07, 0x14, 0xF4, 0xCE, 0x05, 0x92, 0x37, 0x03};
+  const ParsedFrame header = parseKwpFrame(header_bytes, sizeof(header_bytes));
+  const ParsedFrame body = parseKwpFrame(body_bytes, sizeof(body_bytes));
+  assert(header.valid && header.title == ParsedTitle::GroupHeader);
+  assert(body.valid && body.title == ParsedTitle::GroupBody);
+
+  DecodedNumberedGroup decoded{};
+  assert(decodeNumberedGroup(2, header, body, decoded));
+  assert(decoded.zoneCount == 4);
+  assert(decoded.zones[2].supported);
+  assert(decoded.zones[2].formula == 0x85);
+  assert(decoded.zones[2].raw == 0x92);
+  // Known-good reference: formula 0x85 is nwb * raw / 256.
+  assert(std::fabs(decoded.zones[2].value - 13.6875f) < 0.0001f);
+
+  const uint8_t g69_header_bytes[] = {
+      0x20, 0x18, 0x02, 0x8B, 0x1A, 0x11, 0xFA, 0xE1, 0xE0, 0xBC,
+      0xAD, 0x96, 0x84, 0x75, 0x61, 0x53, 0x48, 0x39, 0x28, 0x1F,
+      0x19, 0x12, 0x00, 0x81, 0x64, 0x00, 0x84, 0x02, 0x00,
+      0x81, 0x64, 0x00, 0x03};
+  const uint8_t g69_body_bytes[] = {0x07, 0x1A, 0xF4, 0xCC, 0x3B, 0x00, 0x70, 0x03};
+  const ParsedFrame g69_header = parseKwpFrame(g69_header_bytes, sizeof(g69_header_bytes));
+  const ParsedFrame g69_body = parseKwpFrame(g69_body_bytes, sizeof(g69_body_bytes));
+  DecodedNumberedGroup g69{};
+  assert(decodeNumberedGroup(3, g69_header, g69_body, g69));
+  assert(g69.zoneCount == 4);
+  assert(!g69.zones[2].supported);
+  assert(g69.zones[2].raw == 0x00);
+  return 0;
+}

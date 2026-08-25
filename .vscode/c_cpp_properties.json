@@ -13,13 +13,13 @@
             "intelliSenseMode": "gcc-x64",
             "includePath": [
                 "/Users/to/sciebo/TT_ESP32/M5Tab5_AutoDia/M5Tab5_Digifant_Proto",
-                "/Users/to/Library/Arduino15/packages/esp32/tools/esp32p4_es-libs/3.3.10/qio_qspi/include",
-                "/Users/to/Library/Arduino15/packages/esp32/hardware/esp32/3.3.10/cores/esp32",
-                "/Users/to/Library/Arduino15/packages/esp32/hardware/esp32/3.3.10/variants/m5stack_tab5",
+                "/Users/to/Library/Arduino15/packages/esp32/tools/esp32p4_es-libs/3.3.11/qio_qspi/include",
+                "/Users/to/Library/Arduino15/packages/esp32/hardware/esp32/3.3.11/cores/esp32",
+                "/Users/to/Library/Arduino15/packages/esp32/hardware/esp32/3.3.11/variants/m5stack_tab5",
                 "/Users/to/Documents/Arduino/libraries/M5Unified/src",
                 "/Users/to/Documents/Arduino/libraries/M5GFX/src",
                 "/Users/to/Documents/Arduino/libraries/EspUsbHost/src",
-                "/Users/to/Library/Arduino15/packages/esp32/hardware/esp32/3.3.10/libraries/FS/src",
+                "/Users/to/Library/Arduino15/packages/esp32/hardware/esp32/3.3.11/libraries/FS/src",
                 "/Users/to/Library/Arduino15/packages/esp32/tools/esp-rv32/2601/riscv32-esp-elf/include/c++/14.2.0",
                 "/Users/to/Library/Arduino15/packages/esp32/tools/esp-rv32/2601/riscv32-esp-elf/include/c++/14.2.0/riscv32-esp-elf",
                 "/Users/to/Library/Arduino15/packages/esp32/tools/esp-rv32/2601/riscv32-esp-elf/include/c++/14.2.0/backward",
@@ -28,7 +28,7 @@
                 "/Users/to/Library/Arduino15/packages/esp32/tools/esp-rv32/2601/riscv32-esp-elf/include"
             ],
             "forcedInclude": [
-                "/Users/to/Library/Arduino15/packages/esp32/hardware/esp32/3.3.10/cores/esp32/Arduino.h"
+                "/Users/to/Library/Arduino15/packages/esp32/hardware/esp32/3.3.11/cores/esp32/Arduino.h"
             ],
             "cStandard": "c11",
             "cppStandard": "c++11",
