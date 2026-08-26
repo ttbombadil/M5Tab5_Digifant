@@ -1,5 +1,4 @@
 #include "../src/kwp_byte_engine.h"
-#include "../src/kwp_receive_service.h"
 #include <cassert>
 
 using namespace digifant::kwp;
@@ -58,12 +57,6 @@ int main() {
   assert(engine.state() == ByteEngineState::HostEcho);
   engine.onRxByte(0x53);
   assert(engine.state() == ByteEngineState::Fault && engine.fault() == ByteEngineFault::UnexpectedByte);
-
-  // The receive service is the only runner-side consumer; the USB callback
-  // contributes value records and never enters this service directly.
-  KwpReceiveService service;
-  service.reset();
-  assert(service.state() == ByteEngineState::RxLength);
 
   engine.reset();
   assert(engine.beginHostByte(0x03, false));

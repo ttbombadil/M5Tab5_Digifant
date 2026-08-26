@@ -1,6 +1,18 @@
 #include <Arduino.h>
 #include <M5Unified.h>
+#ifndef TAB5_RUNTIME_DEBUG
+#define TAB5_RUNTIME_DEBUG 0
+#endif
+#ifndef TAB5_RUNTIME_DEBUG_WATCHDOG
+#define TAB5_RUNTIME_DEBUG_WATCHDOG 0
+#endif
 #include <esp_system.h>
+#if TAB5_RUNTIME_DEBUG
+#include <esp_heap_caps.h>
+#if TAB5_RUNTIME_DEBUG_WATCHDOG
+#include <esp_task_wdt.h>
+#endif
+#endif
 #include "src/esp_usb_host_fork/EspUsbHost.h"
 #include <atomic>
 #include "src/k409_device_filter.h"
@@ -12,7 +24,6 @@
 #include "src/processing_service.h"
 #include "src/serial_consumer.h"
 #include "src/measurement_snapshot.h"
-#include "src/ui_state.h"
 #include "src/display_ui.h"
 #include "src/sprotz_logger.h"
 #include "src/sprotz_logger_target.h"
@@ -20,13 +31,17 @@
 #include "src/imu_target_adapter.h"
 #include "src/imu_sample_ring.h"
 #include "src/logger_time_merge.h"
+#include "src/runtime_debug.h"
 
 namespace {
 EspUsbHost usb_host;
 digifant::transport::RxIngressRing rx_ingress;
 digifant::transport::CriticalTransportEventRing critical_events;
 digifant::transport::ValidatedFrameQueue frame_queue;
-digifant::ui::SnapshotConsumerFanout snapshot_fanout;
+#ifndef V2_015_TARGET_STRESS
+#define V2_015_TARGET_STRESS 0
+#endif
+digifant::ui::SnapshotConsumerFanout snapshot_fanout(V2_015_TARGET_STRESS != 0);
 digifant::logging::LoggerSnapshotQueue logger_snapshot_queue;
 digifant::logging::LoggerCommandQueue logger_command_queue;
 digifant::processing::ProcessingService processing_service(
@@ -55,11 +70,21 @@ digifant::imu::ImuSampler imu_sampler(imu_source, imu_diagnostics_sink);
 TaskHandle_t processing_task = nullptr;
 TaskHandle_t serial_snapshot_task = nullptr;
 TaskHandle_t display_snapshot_task = nullptr;
+#if V2_015_TARGET_STRESS
 TaskHandle_t bluetooth_snapshot_task = nullptr;
 TaskHandle_t web_snapshot_task = nullptr;
+#endif
 TaskHandle_t sprotz_logger_task = nullptr;
 TaskHandle_t imu_sampler_task = nullptr;
 digifant::ui::DisplayUi display_ui;
+#if TAB5_RUNTIME_DEBUG
+digifant::runtime::RuntimeDebug runtime_debug;
+uint64_t last_debug_memory_sample_us = 0;
+#if TAB5_RUNTIME_DEBUG_WATCHDOG
+bool debug_display_watchdog_registered = false;
+bool debug_serial_watchdog_registered = false;
+#endif
+#endif
 std::atomic<uint8_t> device_state{0};
 std::atomic<uint8_t> device_address{0};
 std::atomic<uint8_t> serial_tab_request{255};
@@ -76,10 +101,6 @@ uint32_t next_session_epoch = 1;
 uint64_t next_transport_operation_id = 1;
 constexpr uint8_t kConnected = 1;
 
-#ifndef V2_015_TARGET_STRESS
-#define V2_015_TARGET_STRESS 0
-#endif
-
 uint64_t serial_now_us(void*) noexcept { return static_cast<uint64_t>(micros()); }
 
 uint32_t serial_logger_stack_free_words(void* context) noexcept {
@@ -87,12 +108,54 @@ uint32_t serial_logger_stack_free_words(void* context) noexcept {
   return task != nullptr ? static_cast<uint32_t>(uxTaskGetStackHighWaterMark(task)) : 0U;
 }
 
+#if TAB5_RUNTIME_DEBUG
+uint32_t current_task_stack_high_water_words() noexcept {
+  return static_cast<uint32_t>(uxTaskGetStackHighWaterMark(nullptr));
+}
+
+void sample_runtime_debug_memory(uint64_t nowUs) noexcept {
+  if (nowUs - last_debug_memory_sample_us < 1'000'000ULL) return;
+  last_debug_memory_sample_us = nowUs;
+  runtime_debug.noteMemory(
+      heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+      heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL),
+      heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
+      heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM));
+}
+
+#if TAB5_RUNTIME_DEBUG_WATCHDOG
+void configure_runtime_debug_watchdog() noexcept {
+  const esp_task_wdt_config_t config{8'000, 0, true};
+  if (esp_task_wdt_status(nullptr) == ESP_ERR_INVALID_STATE &&
+      esp_task_wdt_init(&config) != ESP_OK) return;
+  debug_display_watchdog_registered =
+      display_snapshot_task != nullptr && esp_task_wdt_add(display_snapshot_task) == ESP_OK;
+  debug_serial_watchdog_registered =
+      serial_snapshot_task != nullptr && esp_task_wdt_add(serial_snapshot_task) == ESP_OK;
+}
+#endif
+#endif
+
 digifant::serial::SerialConsumer<decltype(Serial)> serial_consumer(
     logger_command_queue, logger_status_fanout.serial(), snapshot_fanout.serial(),
-    imu_diagnostics_mailbox, serial_tab_request, Serial);
+    imu_diagnostics_mailbox, serial_tab_request, Serial,
+#if TAB5_RUNTIME_DEBUG
+    &runtime_debug
+#else
+    nullptr
+#endif
+);
 
 void processing_task_entry(void*) {
   for (;;) {
+#if TAB5_RUNTIME_DEBUG
+    const uint64_t debug_started_us = static_cast<uint64_t>(esp_timer_get_time());
+    runtime_debug.beginLoop(digifant::runtime::DebugTask::Processing,
+                            digifant::runtime::DebugPhase::ProcessingPoll, debug_started_us,
+                            current_task_stack_high_water_words());
+    runtime_debug.noteTaskHandle(digifant::runtime::DebugTask::Processing,
+                                 reinterpret_cast<uintptr_t>(xTaskGetCurrentTaskHandle()));
+#endif
     const bool consumed = processing_service.poll([]() noexcept {
       return digifant::processing::RuntimeStatus{
           device_state.load(std::memory_order_acquire) == kConnected,
@@ -103,15 +166,41 @@ void processing_task_entry(void*) {
           action_failures.load(std::memory_order_acquire),
           byte_engine_fault.load(std::memory_order_acquire)};
     });
+#if TAB5_RUNTIME_DEBUG
+    const uint64_t debug_finished_us = static_cast<uint64_t>(esp_timer_get_time());
+    runtime_debug.observeLoopDuration(digifant::runtime::DebugTask::Processing,
+                                      static_cast<uint32_t>(debug_finished_us - debug_started_us));
+    runtime_debug.setPhase(digifant::runtime::DebugTask::Processing,
+                           digifant::runtime::DebugPhase::Idle, debug_finished_us);
+#endif
     vTaskDelay(pdMS_TO_TICKS(consumed ? 1 : 10));
   }
 }
 
 void serial_snapshot_task_entry(void*) {
   for (;;) {
+#if TAB5_RUNTIME_DEBUG
+    const uint64_t debug_started_us = static_cast<uint64_t>(esp_timer_get_time());
+    runtime_debug.beginLoop(digifant::runtime::DebugTask::Serial,
+                            digifant::runtime::DebugPhase::SerialPoll, debug_started_us,
+                            current_task_stack_high_water_words());
+    runtime_debug.noteTaskHandle(digifant::runtime::DebugTask::Serial,
+                                 reinterpret_cast<uintptr_t>(xTaskGetCurrentTaskHandle()));
+    sample_runtime_debug_memory(debug_started_us);
+#endif
     serial_consumer.poll(serial_now_us, nullptr,
                          sprotz_logger_task != nullptr ? serial_logger_stack_free_words : nullptr,
                          &sprotz_logger_task);
+#if TAB5_RUNTIME_DEBUG
+    const uint64_t debug_finished_us = static_cast<uint64_t>(esp_timer_get_time());
+    runtime_debug.observeLoopDuration(digifant::runtime::DebugTask::Serial,
+                                      static_cast<uint32_t>(debug_finished_us - debug_started_us));
+    runtime_debug.setPhase(digifant::runtime::DebugTask::Serial,
+                           digifant::runtime::DebugPhase::Idle, debug_finished_us);
+#if TAB5_RUNTIME_DEBUG_WATCHDOG
+    if (debug_serial_watchdog_registered) (void)esp_task_wdt_reset();
+#endif
+#endif
     vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
@@ -119,13 +208,37 @@ void serial_snapshot_task_entry(void*) {
 void display_snapshot_task_entry(void*) {
   uint32_t last_stall_ms = 0;
   for (;;) {
+#if TAB5_RUNTIME_DEBUG
+    const uint64_t debug_started_us = static_cast<uint64_t>(esp_timer_get_time());
+    runtime_debug.beginLoop(digifant::runtime::DebugTask::Display,
+                            digifant::runtime::DebugPhase::LoopBegin, debug_started_us,
+                            current_task_stack_high_water_words());
+    runtime_debug.noteTaskHandle(digifant::runtime::DebugTask::Display,
+                                 reinterpret_cast<uintptr_t>(xTaskGetCurrentTaskHandle()));
+#endif
     const uint8_t requested_tab = serial_tab_request.exchange(255, std::memory_order_acq_rel);
-    if (requested_tab < 4U) display_ui.setTabFromSerial(requested_tab);
+    if (requested_tab < 4U) {
+#if TAB5_RUNTIME_DEBUG
+      display_ui.setTabFromSerial(requested_tab, runtime_debug.requestedTabSequence());
+#else
+      display_ui.setTabFromSerial(requested_tab);
+#endif
+    }
     digifant::ui::MeasurementSnapshot next{};
     if (snapshot_fanout.display().receive(next)) display_ui.consume(next);
     digifant::logging::LoggerStatus logger_status{};
     if (logger_status_fanout.display().receive(logger_status)) display_ui.consumeLoggerStatus(logger_status);
     display_ui.update();
+#if TAB5_RUNTIME_DEBUG
+    const uint64_t debug_finished_us = static_cast<uint64_t>(esp_timer_get_time());
+    runtime_debug.observeLoopDuration(digifant::runtime::DebugTask::Display,
+                                      static_cast<uint32_t>(debug_finished_us - debug_started_us));
+    runtime_debug.setPhase(digifant::runtime::DebugTask::Display,
+                           digifant::runtime::DebugPhase::Idle, debug_finished_us);
+#if TAB5_RUNTIME_DEBUG_WATCHDOG
+    if (debug_display_watchdog_registered) (void)esp_task_wdt_reset();
+#endif
+#endif
     const uint32_t now = millis();
     if (V2_015_TARGET_STRESS && now - last_stall_ms >= 4000U) {
       last_stall_ms = now;
@@ -138,7 +251,22 @@ void display_snapshot_task_entry(void*) {
 void sprotz_logger_task_entry(void*) {
   sprotz_logger_service.begin();
   for (;;) {
-    sprotz_logger_service.poll(static_cast<uint64_t>(esp_timer_get_time()));
+    const uint64_t now_us = static_cast<uint64_t>(esp_timer_get_time());
+#if TAB5_RUNTIME_DEBUG
+    runtime_debug.beginLoop(digifant::runtime::DebugTask::Logger,
+                            digifant::runtime::DebugPhase::LoggerPoll, now_us,
+                            current_task_stack_high_water_words());
+    runtime_debug.noteTaskHandle(digifant::runtime::DebugTask::Logger,
+                                 reinterpret_cast<uintptr_t>(xTaskGetCurrentTaskHandle()));
+#endif
+    sprotz_logger_service.poll(now_us);
+#if TAB5_RUNTIME_DEBUG
+    const uint64_t debug_finished_us = static_cast<uint64_t>(esp_timer_get_time());
+    runtime_debug.observeLoopDuration(digifant::runtime::DebugTask::Logger,
+                                      static_cast<uint32_t>(debug_finished_us - now_us));
+    runtime_debug.setPhase(digifant::runtime::DebugTask::Logger,
+                           digifant::runtime::DebugPhase::Idle, debug_finished_us);
+#endif
     vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
@@ -146,11 +274,26 @@ void sprotz_logger_task_entry(void*) {
 void imu_sampler_task_entry(void*) {
   for (;;) {
     const uint64_t now = static_cast<uint64_t>(esp_timer_get_time());
+#if TAB5_RUNTIME_DEBUG
+    runtime_debug.beginLoop(digifant::runtime::DebugTask::Imu,
+                            digifant::runtime::DebugPhase::ImuPoll, now,
+                            current_task_stack_high_water_words());
+    runtime_debug.noteTaskHandle(digifant::runtime::DebugTask::Imu,
+                                 reinterpret_cast<uintptr_t>(xTaskGetCurrentTaskHandle()));
+#endif
     (void)imu_sampler.poll(now);
+#if TAB5_RUNTIME_DEBUG
+    const uint64_t debug_finished_us = static_cast<uint64_t>(esp_timer_get_time());
+    runtime_debug.observeLoopDuration(digifant::runtime::DebugTask::Imu,
+                                      static_cast<uint32_t>(debug_finished_us - now));
+    runtime_debug.setPhase(digifant::runtime::DebugTask::Imu,
+                           digifant::runtime::DebugPhase::Idle, debug_finished_us);
+#endif
     vTaskDelay(pdMS_TO_TICKS(1));
   }
 }
 
+#if V2_015_TARGET_STRESS
 struct DummySnapshotConsumer {
   digifant::ui::LatestSnapshotMailbox* mailbox = nullptr;
   uint32_t delayMs = 1000;
@@ -167,6 +310,7 @@ void dummy_snapshot_task_entry(void* argument) {
     vTaskDelay(pdMS_TO_TICKS(consumer->delayMs));
   }
 }
+#endif
 
 void on_device_connected(const EspUsbHostDeviceInfo& info) {
   if (!digifant::k409::matches(info.vid, info.pid)) return;
@@ -425,6 +569,9 @@ void setup() {
   if (!ensure_tab5_display_ready()) action_failures.fetch_add(1, std::memory_order_relaxed);
   else display_boot_recovery_attempted = 0;
   display_ui.bindLogger(logger_command_queue);
+#if TAB5_RUNTIME_DEBUG
+  display_ui.bindRuntimeDebug(&runtime_debug);
+#endif
   display_ui.begin();
   if (xTaskCreate(processing_task_entry, "processing", 6144, nullptr, 3, &processing_task) != pdPASS)
     action_failures.fetch_add(1, std::memory_order_relaxed);
@@ -434,18 +581,23 @@ void setup() {
   if (xTaskCreate(display_snapshot_task_entry, "display_snapshot_task", 12288, nullptr, 2,
                   &display_snapshot_task) != pdPASS)
     action_failures.fetch_add(1, std::memory_order_relaxed);
+#if V2_015_TARGET_STRESS
   if (xTaskCreate(dummy_snapshot_task_entry, "bluetooth_snapshot_dummy", 3072,
                   &bluetooth_consumer, 1, &bluetooth_snapshot_task) != pdPASS)
     action_failures.fetch_add(1, std::memory_order_relaxed);
   if (xTaskCreate(dummy_snapshot_task_entry, "web_snapshot_dummy", 3072,
                   &web_consumer, 1, &web_snapshot_task) != pdPASS)
     action_failures.fetch_add(1, std::memory_order_relaxed);
+#endif
   if (xTaskCreate(sprotz_logger_task_entry, "sprotz_logger", 16384, nullptr, 1,
                   &sprotz_logger_task) != pdPASS)
     action_failures.fetch_add(1, std::memory_order_relaxed);
   if (xTaskCreate(imu_sampler_task_entry, "imu_sampler", 3072, nullptr, 1,
                   &imu_sampler_task) != pdPASS)
     action_failures.fetch_add(1, std::memory_order_relaxed);
+#if TAB5_RUNTIME_DEBUG && TAB5_RUNTIME_DEBUG_WATCHDOG
+  configure_runtime_debug_watchdog();
+#endif
   usb_host.onDeviceConnected(on_device_connected);
   usb_host.onDeviceDisconnected(on_device_disconnected);
   usb_host.onSerialData(on_serial_data);
@@ -453,4 +605,23 @@ void setup() {
   if (!usb_host.begin()) action_failures.fetch_add(1, std::memory_order_relaxed);
 }
 
-void loop() { run_session(); delay(20); }
+void loop() {
+#if TAB5_RUNTIME_DEBUG
+  const uint64_t debug_started_us = static_cast<uint64_t>(esp_timer_get_time());
+  runtime_debug.beginLoop(digifant::runtime::DebugTask::Arduino,
+                          digifant::runtime::DebugPhase::ArduinoBeforeSession,
+                          debug_started_us, current_task_stack_high_water_words());
+  runtime_debug.noteTaskHandle(digifant::runtime::DebugTask::Arduino,
+                               reinterpret_cast<uintptr_t>(xTaskGetCurrentTaskHandle()));
+#endif
+  run_session();
+#if TAB5_RUNTIME_DEBUG
+  const uint64_t debug_finished_us = static_cast<uint64_t>(esp_timer_get_time());
+  runtime_debug.observeLoopDuration(digifant::runtime::DebugTask::Arduino,
+                                    static_cast<uint32_t>(debug_finished_us - debug_started_us));
+  runtime_debug.setPhase(digifant::runtime::DebugTask::Arduino,
+                         digifant::runtime::DebugPhase::ArduinoAfterSession,
+                         debug_finished_us);
+#endif
+  delay(20);
+}

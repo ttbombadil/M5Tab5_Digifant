@@ -4,6 +4,8 @@
 **Verbindliche Architektur:** `ARCHITECTURE_V2.md`
 **Aufgabe dieses Plans:** bewahrende Migration der funktionierenden Anwendung
 auf genau eine RX-/Frame-/Decoder-/Snapshot-Pipeline.
+**Dokumentstatus:** historischer, abgeschlossener Implementierungsplan; neue
+Arbeiten werden nicht als V2-TODOs in diesem Dokument begonnen.
 
 **Status 2026-08-25:** Die funktionale V2-Migration einschließlich V2-015 und
 der Logger-/IMU-/DLOG-Gates V2-016 bis V2-019 ist abgeschlossen und in
@@ -11,13 +13,16 @@ der Logger-/IMU-/DLOG-Gates V2-016 bis V2-019 ist abgeschlossen und in
 historischer Ausführungsvertrag erhalten; die nachgelagerte Strukturkonsolidierung
 steht in `REFACTORING_REVIEW_SOL_HIGH.md` und ist kein neues V2-TODO.
 
-**Refactoring-Stand 2026-08-25:** Der erste Teil von R6 ist abgeschlossen:
+**Refactoring-Stand 2026-08-25:** R5 sowie der erste Teil von R6 sind abgeschlossen:
 `src/processing_service.h` kapselt Decoder, `MeasurementModel` und Snapshot-
 Publikation; `processing_task_entry()` bleibt als unveränderter Runtime-
 Taskadapter bestehen. Der zweite R6-Teil ist ebenfalls abgeschlossen:
 `src/serial_consumer.h` kapselt Serial-Kommandos, Formatierung und die
 bestehenden Diagnoseausgaben; `serial_snapshot_task_entry()` ist nur noch
-Runtimeadapter. R7–R9 sind nicht begonnen.
+Runtimeadapter. R9 ist als reine Test-/Schattenbereinigung abgeschlossen;
+R7 bleibt wegen des offenen Target-Assert-Gates BLOCKED. R8 ist ebenfalls
+abgeschlossen. Bluetooth-/Web-Dummyconsumer sind nur im expliziten
+`V2_015_TARGET_STRESS=1`-Build aktiv.
 
 ## 1. Ausführungsvertrag
 
@@ -389,8 +394,8 @@ Parallelpfade entfernen.
   entfernen;
 - nur nachweislich ungenutzte Hilfstypen/Tests bereinigen;
 - keine neue Framework- oder Verzeichnisstruktur anlegen;
-- einen Dummy-Bluetooth- und Dummy-Webconsumer jeweils über eine eigene
-  Snapshotmailbox anschließen, ohne Netzwerkfunktion zu implementieren.
+- Dummy-Bluetooth/Webconsumer ausschließlich im expliziten Stressbuild über
+  die vorhandenen Snapshotmailboxen aktivieren; keine Netzwerkfunktion.
 
 **Tests:**
 

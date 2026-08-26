@@ -9,6 +9,9 @@ test "$(rg -l '^digifant::transport::RxIngressRing [A-Za-z_]+;' "${runtime_sourc
 test "$(rg -l '^digifant::transport::ValidatedFrameQueue [A-Za-z_]+;' "${runtime_sources[@]}" | wc -l | tr -d ' ')" = 1
 test "$(rg -l 'diagnostic::DiagnosticDecoder [A-Za-z_]+_;' "${runtime_sources[@]}" | wc -l | tr -d ' ')" = 1
 rg -q 'ProcessingService processing_service' "$ino"
+rg -q '#if V2_015_TARGET_STRESS' "$ino"
+rg -q 'SnapshotConsumerFanout snapshot_fanout\(V2_015_TARGET_STRESS != 0\)' "$ino"
+rg -q 'xTaskCreate\(dummy_snapshot_task_entry' "$ino"
 
 if rg -n '\bwire_rx(_count)?\b|PersistenceQueue|RawFrameRecord|raw_capture_queue|setCaptureSink' \
   "${runtime_sources[@]}"; then
@@ -48,4 +51,4 @@ fi
 "$root/tools/check_pipeline_v2_010.sh"
 "$root/tools/check_pipeline_v2_013.sh"
 "$root/tools/check_pipeline_v2_014.sh"
-echo "V2-015: single pipeline and four independent snapshot consumers detected"
+echo "V2-015: single pipeline; production fanout and explicit stress consumers detected"

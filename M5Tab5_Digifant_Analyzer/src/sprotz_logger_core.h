@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sprotz_log_format.h"
+#include "sprotz_event_state.h"
 
 namespace digifant::logging {
 
@@ -12,6 +13,7 @@ class SprotzLoggerCore {
   void storageReady(bool ready) noexcept {
     status_.state = ready ? LoggerState::Ready : LoggerState::NoStorage;
     status_.lastError = ready ? LoggerError::None : LoggerError::Open;
+    status_.sprotzActive = eventState_.active();
   }
 
   void acceptSnapshot(const ui::MeasurementSnapshot& snapshot) noexcept {
@@ -23,27 +25,39 @@ class SprotzLoggerCore {
   }
 
   void handle(const LoggerCommand& command) noexcept {
-    switch (command.kind) {
-      case LoggerCommandKind::Start: start(command.timestampUs); break;
-      case LoggerCommandKind::Stop:
-        if (status_.state == LoggerState::Recording) {
-          if ((v2_ ? writeV2(V2RecordKind::Stop, command.timestampUs, nullptr, 0)
-                  : writeRecord(LogRecordKind::Stop, command.timestampUs))) ++status_.eventsWritten;
+    const auto transition = eventState_.preview(
+        command.kind, status_.state == LoggerState::Recording);
+    switch (transition.action) {
+      case SprotzEventAction::LogStart:
+        eventState_.reset();
+        start(command.timestampUs);
+        break;
+      case SprotzEventAction::LogStop:
+        if (transition.closeActiveEvent &&
+            !writeMarker(command.timestampUs, BinaryLogV2Format::EventSubtype::SprotzStop)) return;
+        if (writeStop(command.timestampUs)) {
+          eventState_.commit(SprotzEventAction::LogStop);
           (void)sink_.flush();
           sink_.close();
           if (status_.state == LoggerState::Recording) status_.state = LoggerState::Ready;
         }
         break;
-      case LoggerCommandKind::Marker:
-        if (status_.state == LoggerState::Recording &&
-            (v2_ ? writeV2(V2RecordKind::Marker, command.timestampUs, nullptr, 0)
-                 : writeRecord(LogRecordKind::Marker, command.timestampUs))) {
-          ++status_.eventsWritten;
-          status_.lastEventAtUs = command.timestampUs;
-          (void)sink_.flush();
-        }
+      case SprotzEventAction::EventStart:
+        if (writeMarker(command.timestampUs, BinaryLogV2Format::EventSubtype::SprotzStart))
+          eventState_.commit(transition.action);
+        break;
+      case SprotzEventAction::EventStop:
+        if (writeMarker(command.timestampUs, BinaryLogV2Format::EventSubtype::SprotzStop))
+          eventState_.commit(transition.action);
+        break;
+      case SprotzEventAction::Marker:
+        if (writeMarker(command.timestampUs, BinaryLogV2Format::EventSubtype::Marker))
+          eventState_.commit(transition.action);
+        break;
+      case SprotzEventAction::Ignore:
         break;
     }
+    status_.sprotzActive = eventState_.active();
   }
 
   bool flush() noexcept {
@@ -85,6 +99,7 @@ class SprotzLoggerCore {
     status_ = {};
     status_.state = LoggerState::Recording;
     status_.startedAtUs = timestampUs;
+    status_.sprotzActive = eventState_.active();
     copyFileName(sink_.fileName());
     if (v2_) {
       const auto fileHeader = BinaryLogV2Format::header(timestampUs);
@@ -108,6 +123,31 @@ class SprotzLoggerCore {
     }
     const auto record = BinaryLogFormat::record(kind, timestampUs, latest_);
     return writeBytes(record.data(), record.size());
+  }
+
+  bool writeMarker(uint64_t timestampUs, BinaryLogV2Format::EventSubtype subtype) noexcept {
+    if (status_.state != LoggerState::Recording) return false;
+    bool written = false;
+    if (v2_) {
+      const auto payload = BinaryLogV2Format::eventPayload(subtype);
+      written = writeV2(V2RecordKind::Marker, timestampUs, payload.data(), payload.size());
+    } else {
+      written = writeRecord(LogRecordKind::Marker, timestampUs);
+    }
+    if (!written) return false;
+    ++status_.eventsWritten;
+    status_.lastEventAtUs = timestampUs;
+    (void)sink_.flush();
+    return true;
+  }
+
+  bool writeStop(uint64_t timestampUs) noexcept {
+    if (status_.state != LoggerState::Recording) return false;
+    if (!(v2_ ? writeV2(V2RecordKind::Stop, timestampUs, nullptr, 0)
+              : writeRecord(LogRecordKind::Stop, timestampUs))) return false;
+    ++status_.eventsWritten;
+    status_.lastEventAtUs = timestampUs;
+    return true;
   }
 
   bool writeV2Snapshot(uint64_t timestampUs) noexcept {
@@ -169,6 +209,7 @@ class SprotzLoggerCore {
   bool v2_ = false;
   LoggerStatus status_{};
   ui::MeasurementSnapshot latest_{};
+  SprotzEventStateMachine eventState_{};
 };
 
 

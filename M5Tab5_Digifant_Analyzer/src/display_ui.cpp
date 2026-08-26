@@ -9,12 +9,15 @@ namespace digifant::ui {
 
 void DisplayUi::bindLogger(logging::LoggerCommandQueue& commands) noexcept { loggerCommands_ = &commands; }
 
+void DisplayUi::bindRuntimeDebug(runtime::RuntimeDebug* debug) noexcept { runtimeDebug_ = debug; }
+
 void DisplayUi::consumeLoggerStatus(const logging::LoggerStatus& status) noexcept {
   if (status.state == loggerStatus_.state && status.lastError == loggerStatus_.lastError &&
       status.storagePresent == loggerStatus_.storagePresent &&
       status.snapshotsWritten == loggerStatus_.snapshotsWritten &&
       status.eventsWritten == loggerStatus_.eventsWritten &&
-      status.queueDrops == loggerStatus_.queueDrops) return;
+      status.queueDrops == loggerStatus_.queueDrops &&
+      status.sprotzActive == loggerStatus_.sprotzActive) return;
   loggerStatus_ = status;
   loggerDirty_ = true;
   needLoggerControls_ = true;
@@ -30,15 +33,37 @@ void DisplayUi::begin() {
 
 void DisplayUi::consume(const MeasurementSnapshot& snapshot) noexcept { model_.accept(snapshot); }
 
-void DisplayUi::setTabFromSerial(uint8_t tab) noexcept {
+void DisplayUi::setTabFromSerial(uint8_t tab, uint32_t requestSequence) noexcept {
   if (tab >= 4U) return;
   model_.setTab(static_cast<DisplayTab>(tab));
   needLayout_ = true;
   loggerDirty_ = true;
+#if TAB5_RUNTIME_DEBUG
+  appliedTabSequence_ = requestSequence;
+  if (runtimeDebug_ != nullptr)
+    runtimeDebug_->noteTabApplied(tab, requestSequence,
+                                  static_cast<uint64_t>(esp_timer_get_time()));
+#endif
 }
 
 void DisplayUi::update() {
+#if TAB5_RUNTIME_DEBUG
+  const uint64_t updateStartedUs = static_cast<uint64_t>(esp_timer_get_time());
+  if (runtimeDebug_ != nullptr)
+    runtimeDebug_->setPhase(runtime::DebugTask::Display,
+                            runtime::DebugPhase::DisplayBeforeM5Update, updateStartedUs);
+#endif
   M5.update();
+#if TAB5_RUNTIME_DEBUG
+  const uint64_t updateFinishedUs = static_cast<uint64_t>(esp_timer_get_time());
+  if (runtimeDebug_ != nullptr) {
+    runtimeDebug_->setPhase(runtime::DebugTask::Display,
+                            runtime::DebugPhase::DisplayAfterM5Update, updateFinishedUs);
+    runtimeDebug_->observeLoopDuration(
+        runtime::DebugTask::Display,
+        static_cast<uint32_t>(updateFinishedUs - updateStartedUs));
+  }
+#endif
   if (!ready_) {
     const uint32_t now = millis();
     if (spriteInitAttempts_ < kMaxSpriteInitAttempts &&
@@ -47,11 +72,39 @@ void DisplayUi::update() {
     }
     return;
   }
+#if TAB5_RUNTIME_DEBUG
+  if (runtimeDebug_ != nullptr)
+    runtimeDebug_->setPhase(runtime::DebugTask::Display,
+                            runtime::DebugPhase::DisplayBeforeTouch,
+                            static_cast<uint64_t>(esp_timer_get_time()));
+#endif
   handleTouch();
+#if TAB5_RUNTIME_DEBUG
+  if (runtimeDebug_ != nullptr)
+    runtimeDebug_->setPhase(runtime::DebugTask::Display,
+                            runtime::DebugPhase::DisplayAfterTouch,
+                            static_cast<uint64_t>(esp_timer_get_time()));
+#endif
   model_.sampleIfDue(millis());
   const uint32_t now = millis();
   if ((!model_.dirty() && !loggerDirty_) || now - lastDrawMs_ < kRefreshMs) return;
+#if TAB5_RUNTIME_DEBUG
+  const uint64_t drawStartedUs = static_cast<uint64_t>(esp_timer_get_time());
+  if (runtimeDebug_ != nullptr)
+    runtimeDebug_->setPhase(runtime::DebugTask::Display,
+                            runtime::DebugPhase::DisplayBeforeDraw, drawStartedUs);
+#endif
   draw();
+#if TAB5_RUNTIME_DEBUG
+  const uint64_t drawFinishedUs = static_cast<uint64_t>(esp_timer_get_time());
+  if (runtimeDebug_ != nullptr) {
+    runtimeDebug_->setPhase(runtime::DebugTask::Display,
+                            runtime::DebugPhase::DisplayAfterDraw, drawFinishedUs);
+    runtimeDebug_->observeLoopDuration(
+        runtime::DebugTask::Display,
+        static_cast<uint32_t>(drawFinishedUs - drawStartedUs));
+  }
+#endif
 }
 
 const DisplayUiModel& DisplayUi::model() const noexcept { return model_; }
@@ -99,13 +152,36 @@ bool DisplayUi::initializeSprites() {
 }
 
 void DisplayUi::handleTouch() {
-  if (M5.Touch.getCount() == 0) return;
+  const uint8_t touchCount = static_cast<uint8_t>(M5.Touch.getCount());
+  if (touchCount == 0) {
+#if TAB5_RUNTIME_DEBUG
+    if (runtimeDebug_ != nullptr)
+      runtimeDebug_->noteTouch(0, false, 0, 0, static_cast<uint64_t>(esp_timer_get_time()));
+#endif
+    return;
+  }
   const auto& touch = M5.Touch.getDetail(0);
-  if (!touch.wasPressed()) return;
+  const bool pressed = touch.wasPressed();
+#if TAB5_RUNTIME_DEBUG
+  if (runtimeDebug_ != nullptr)
+    runtimeDebug_->noteTouch(touchCount, pressed, static_cast<int16_t>(touch.x),
+                             static_cast<int16_t>(touch.y),
+                             static_cast<uint64_t>(esp_timer_get_time()));
+#endif
+  if (!pressed) return;
   if (touch.y < kTabHeight) {
     const DisplayTab old = model_.tab();
-    model_.setTab(static_cast<DisplayTab>(touch.x / (width_ / 4)));
+    const uint8_t tab = static_cast<uint8_t>(touch.x / (width_ / 4));
+    model_.setTab(static_cast<DisplayTab>(tab));
     if (old != model_.tab()) needLayout_ = true;
+#if TAB5_RUNTIME_DEBUG
+    if (old != model_.tab() && runtimeDebug_ != nullptr) {
+      const uint64_t nowUs = static_cast<uint64_t>(esp_timer_get_time());
+      appliedTabSequence_ = runtimeDebug_->noteTabRequest(
+          tab, nowUs, runtime::DebugTask::Display, runtime::DebugPhase::DisplayAfterTouch);
+      runtimeDebug_->noteTabApplied(tab, appliedTabSequence_, nowUs);
+    }
+#endif
     return;
   }
   if (model_.tab() == DisplayTab::List && touch.y >= kContentTop) {
@@ -114,12 +190,17 @@ void DisplayUi::handleTouch() {
     model_.setListPage(page);
   } else if (model_.tab() == DisplayTab::Traces && touch.y >= kContentTop) {
     if (touch.y >= kLoggerButtonY) {
-      if (touch.x >= kStartButtonX && touch.x < kStartButtonX + kStartButtonW) {
+      if (touch.x >= kLogButtonX && touch.x < kLogButtonX + kLogButtonW) {
         const auto kind = loggerStatus_.state == logging::LoggerState::Recording
-                              ? logging::LoggerCommandKind::Stop
-                              : logging::LoggerCommandKind::Start;
+                              ? logging::LoggerCommandKind::LogStop
+                              : logging::LoggerCommandKind::LogStart;
         sendLoggerCommand(kind);
-      } else if (touch.x >= kMarkerButtonX &&
+      } else if (touch.x >= kSprotzButtonX && touch.x < kSprotzButtonX + kSprotzButtonW &&
+                 loggerStatus_.state == logging::LoggerState::Recording) {
+        sendLoggerCommand(loggerStatus_.sprotzActive
+                              ? logging::LoggerCommandKind::SprotzStop
+                              : logging::LoggerCommandKind::SprotzStart);
+      } else if (touch.x >= kMarkerButtonX && touch.x < kMarkerButtonX + kMarkerButtonW &&
                  loggerStatus_.state == logging::LoggerState::Recording) {
         sendLoggerCommand(logging::LoggerCommandKind::Marker);
       }
@@ -138,6 +219,11 @@ void DisplayUi::draw() {
     lastDrawnTab_ = model_.tab();
     needLayout_ = false;
     needLoggerControls_ = true;
+#if TAB5_RUNTIME_DEBUG
+    if (runtimeDebug_ != nullptr)
+      runtimeDebug_->noteTabRendered(static_cast<uint8_t>(model_.tab()), appliedTabSequence_,
+                                     static_cast<uint64_t>(esp_timer_get_time()));
+#endif
   }
   drawStatus();
   switch (model_.tab()) {
@@ -448,6 +534,8 @@ void DisplayUi::sendLoggerCommand(logging::LoggerCommandKind kind) noexcept {
 }
 
 const char* DisplayUi::loggerShortStatus() const noexcept {
+  if (loggerStatus_.state == logging::LoggerState::Recording && loggerStatus_.sprotzActive)
+    return "SPROTZ AKTIV";
   switch (loggerStatus_.state) {
     case logging::LoggerState::Recording: return "LOG REC";
     case logging::LoggerState::Ready: return "LOG BEREIT";
@@ -470,13 +558,20 @@ uint16_t DisplayUi::loggerColor() const noexcept {
 void DisplayUi::drawLoggerControls() {
   needLoggerControls_ = false;
   const bool recording = loggerStatus_.state == logging::LoggerState::Recording;
-  const uint16_t startColor = recording ? kRed : kGreen;
-  M5.Display.fillRoundRect(kStartButtonX, kLoggerButtonY, kStartButtonW, kLoggerButtonH, 14,
-                          startColor);
-  M5.Display.setTextColor(TFT_WHITE, startColor);
+  const uint16_t logColor = recording ? kRed : kGreen;
+  M5.Display.fillRoundRect(kLogButtonX, kLoggerButtonY, kLogButtonW, kLoggerButtonH, 14,
+                          logColor);
+  M5.Display.setTextColor(TFT_WHITE, logColor);
   M5.Display.setTextSize(3);
-  M5.Display.drawCentreString(recording ? "SPROTZEN STOP" : "SPROTZEN START",
-                              kStartButtonX + kStartButtonW / 2,
+  M5.Display.drawCentreString(recording ? "LOG STOP" : "LOG START",
+                              kLogButtonX + kLogButtonW / 2,
+                              kLoggerButtonY + 24);
+  const uint16_t sprotzColor = !recording ? kPanel2 : loggerStatus_.sprotzActive ? kAmber : kBlue;
+  M5.Display.fillRoundRect(kSprotzButtonX, kLoggerButtonY, kSprotzButtonW, kLoggerButtonH, 14,
+                          sprotzColor);
+  M5.Display.setTextColor(recording ? TFT_WHITE : kGrey, sprotzColor);
+  M5.Display.drawCentreString(loggerStatus_.sprotzActive ? "SPROTZ STOP" : "SPROTZ START",
+                              kSprotzButtonX + kSprotzButtonW / 2,
                               kLoggerButtonY + 24);
   const uint16_t markerColor = recording ? kBlue : kPanel2;
   M5.Display.fillRoundRect(kMarkerButtonX, kLoggerButtonY, kMarkerButtonW, kLoggerButtonH, 14,
@@ -488,8 +583,9 @@ void DisplayUi::drawLoggerControls() {
   if (loggerCommandRejected_) {
     snprintf(info, sizeof(info), "LOGGER COMMAND-QUEUE VOLL");
   } else if (loggerStatus_.state == logging::LoggerState::Recording) {
-    snprintf(info, sizeof(info), "REC %lu | Marker %lu | Drops %lu",
+    snprintf(info, sizeof(info), "REC %lu | %s | Marker %lu | Drops %lu",
              static_cast<unsigned long>(loggerStatus_.snapshotsWritten),
+             loggerStatus_.sprotzActive ? "SPROTZ AKTIV" : "SPROTZ IDLE",
              static_cast<unsigned long>(loggerStatus_.eventsWritten > 0
                                             ? loggerStatus_.eventsWritten - 1U : 0U),
              static_cast<unsigned long>(loggerStatus_.queueDrops));
@@ -500,7 +596,7 @@ void DisplayUi::drawLoggerControls() {
   }
   M5.Display.setTextSize(2);
   M5.Display.setTextColor(loggerColor(), kBlack);
-  M5.Display.drawString(info, kStartButtonX, kLoggerButtonY - 28);
+  M5.Display.drawString(info, kLogButtonX, kLoggerButtonY - 28);
 }
 
 void DisplayUi::drawTraceLine(const DisplayScopeRing<DisplayUiModel::kScopeCapacity>& ring,

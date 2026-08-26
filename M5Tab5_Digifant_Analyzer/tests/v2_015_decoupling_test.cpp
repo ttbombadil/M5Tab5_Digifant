@@ -54,8 +54,10 @@ int main() {
   assert(frame.rxSequence == 60000U);  // The downstream gap stays visible.
 
   // Serial and Display continue independently while Bluetooth/Web are slow
-  // or permanently stalled. Adding them must not touch the upstream types.
-  SnapshotConsumerFanout fanout;
+  // or permanently stalled. Optional consumers are enabled explicitly for
+  // this stress fixture; production fanouts leave them disabled.
+  SnapshotConsumerFanout fanout(true);
+  assert(fanout.optionalConsumersEnabled());
   MeasurementSnapshot snapshot{};
   uint32_t last_display_sequence = 0;
   for (uint32_t sequence = 1; sequence <= 10000U; ++sequence) {
@@ -82,7 +84,8 @@ int main() {
 
   // A permanently blocked Serial consumer is just another unobserved latest
   // mailbox; Display keeps receiving every publication.
-  SnapshotConsumerFanout blocked_serial_fanout;
+  SnapshotConsumerFanout blocked_serial_fanout(true);
+  assert(blocked_serial_fanout.optionalConsumersEnabled());
   for (uint32_t sequence = 1; sequence <= 10000U; ++sequence) {
     blocked_serial_fanout.publish(makeSnapshot(sequence));
     assert(blocked_serial_fanout.display().receive(snapshot));

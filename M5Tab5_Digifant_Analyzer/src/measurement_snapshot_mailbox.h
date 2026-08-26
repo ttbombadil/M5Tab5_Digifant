@@ -96,12 +96,26 @@ class LatestSnapshotMailbox {
 
 class SnapshotConsumerFanout {
  public:
+  explicit SnapshotConsumerFanout(bool includeOptionalConsumers = false) noexcept
+      : includeOptionalConsumers_(includeOptionalConsumers) {}
+
   void publish(const MeasurementSnapshot& snapshot) noexcept {
     serial_.publish(snapshot);
     display_.publish(snapshot);
-    bluetooth_.publish(snapshot);
-    web_.publish(snapshot);
+    if (includeOptionalConsumers_) {
+      bluetooth_.publish(snapshot);
+      web_.publish(snapshot);
+    }
   }
+
+  uint32_t overwrites() const noexcept {
+    uint32_t total = serial_.overwrites() + display_.overwrites();
+    if (includeOptionalConsumers_)
+      total += bluetooth_.overwrites() + web_.overwrites();
+    return total;
+  }
+
+  bool optionalConsumersEnabled() const noexcept { return includeOptionalConsumers_; }
 
   LatestSnapshotMailbox& serial() noexcept { return serial_; }
   LatestSnapshotMailbox& display() noexcept { return display_; }
@@ -109,6 +123,7 @@ class SnapshotConsumerFanout {
   LatestSnapshotMailbox& web() noexcept { return web_; }
 
  private:
+  bool includeOptionalConsumers_ = false;
   LatestSnapshotMailbox serial_{};
   LatestSnapshotMailbox display_{};
   LatestSnapshotMailbox bluetooth_{};

@@ -1,60 +1,75 @@
 # M5Tab5 Digifant Analyzer
 
-Eigenständiger Arduino/M5Stack-Neuaufbau für Tab5, AutoDia K409 und Digifant.
-Die verbindlichen kritischen Verträge stehen in [`ARCHITECTURE.md`](ARCHITECTURE.md)
-und der übergeordneten [`../ARCHITECTURE_V2.md`](../ARCHITECTURE_V2.md).
+Arduino/M5Stack-Firmware zur Analyse von Digifant 1.7 über AutoDia K409 und
+KWP1281 auf dem M5Stack Tab5 (ESP32-P4).
 
-## Aktueller Verifikationsstand
+## Aktueller Stand
 
-Der historische V2-001-Smoke-Test ist abgeschlossen. Die aktuelle Firmware
-führt die vollständige V2-Pipeline mit K409, KWP, Decoder, Snapshot-Consumer,
-Logger und Tab5-IMU aus. Die detaillierten Befehle, Zähler, Targetläufe und
-Host-Rücklesungen stehen chronologisch in
-[`verification.md`](verification.md); am Anfang dieses Dokuments gibt es eine
-kompakte Statusmatrix.
+Die produktive Pipeline unterstützt reale ECU-/K409-Kommunikation, kontinuier-
+liches ECU- und Tab5-IMU-Sampling, Snapshot-Verarbeitung und SD-Logging. Die
+MITSCHRIEBE-Ansicht steuert den Sprotz-Logger mit `SPROTZ_START`,
+`SPROTZ_STOP` und `MARKER`; die kompatiblen Kurzkommandos `LOG_START` und
+`LOG_STOP` bleiben verfügbar. DLOG V2 enthält selbstbeschreibende Event-
+Subtypen sowie ECU-, IMU-, Start-, Stop- und Marker-Records.
 
-```sh
-arduino-cli compile --fqbn esp32:esp32:m5stack_tab5 M5Tab5_Digifant_Analyzer
-arduino-cli upload --fqbn esp32:esp32:m5stack_tab5 --port <serieller-port> M5Tab5_Digifant_Analyzer
-```
+Die Displaytabs sind KOMPAKT, LISTE, SYSTEM und MITSCHRIEBE. Die vollständigen
+technischen Nachweise stehen chronologisch in
+[`verification.md`](verification.md).
 
-Das Altprojekt `../M5Tab5_Digifant_Proto/` ist unveränderliche Referenz und darf
-nicht inkludiert, gelinkt oder umgebaut werden.
+Bekannte offene Risiken:
 
-## Langzeitlogger „Sprotz"
+- R7 bleibt `BLOCKED` wegen des Target-Gates zu `xTaskPriorityDisinherit`.
+- Der Assert wurde auf dem Target beobachtet, ist derzeit `NOT-REPRODUCED`.
+- Der Tab5-Runtime-Hänger ohne K409 ist `NOT-REPRODUCED / OPEN`.
 
-Der Tab **MITSCHRIEBE** enthält `SPROTZEN START/STOP` und `MARKER`. Der Logger
-schreibt ausschließlich Kopien des `MeasurementSnapshot` aus einer festen
-32-Snapshot-SPSC-Queue. SD-Zugriffe und Binärcodierung laufen in einer eigenen
-Task mit Priorität 1; der KWP-/Decoderpfad wartet nie auf den Logger.
-
-Benötigt wird eine FAT32-formatierte microSD. Logs liegen unter `/sprotz/` als
-versionierte `.dlog`-Dateien. Jeder Snapshotrecord enthält alle 26 ECU-Felder
-sowie monotone Zeit, Sequenz, Sessionepoch und Transportgeneration. START,
-STOP und MARKER sind eigene timestamped Records. Die UI und Serial zeigen
-`BEREIT`, `REC`, `KEINE SD`, `VOLL` oder `FEHLER`; Queueverluste werden gezählt.
-
-Konvertierung auf dem Entwicklungsrechner:
-
-```sh
-./M5Tab5_Digifant_Analyzer/tools/decode_sprotz_log.py input.dlog -o output.csv
-```
-
-Bei abruptem Stromverlust können höchstens die seit dem letzten periodischen
-Flush noch nicht vom Dateisystem persistierten Datensätze fehlen. STOP und
-MARKER führen sofort einen Flush aus.
-
-## Entwicklung und Verifikation
-
-Hosttests werden aus `tests/` einzeln mit C++20, Warnings-as-errors und
-ASan/UBSan gebaut. Die statischen Pipelinechecks liegen unter `tools/`.
-Targetbuild und Upload:
+## Build und Upload
 
 ```sh
 arduino-cli compile --fqbn esp32:esp32:m5stack_tab5 M5Tab5_Digifant_Analyzer
 arduino-cli upload --fqbn esp32:esp32:m5stack_tab5 --port <serieller-port> M5Tab5_Digifant_Analyzer
 ```
 
-Die vollständige ECU-/IMU-/SD-Abnahme V2-019 ist in `verification.md`
-dokumentiert. Neue Runtimeänderungen benötigen weiterhin den dort definierten
-60-s-ECU-Regressionslauf.
+Der Diagnosebuild ist strikt getrennt und opt-in:
+
+```sh
+arduino-cli compile --fqbn esp32:esp32:m5stack_tab5 \
+  --build-property 'compiler.cpp.extra_flags=-DTAB5_RUNTIME_DEBUG=1 -DTAB5_RUNTIME_DEBUG_WATCHDOG=1' \
+  M5Tab5_Digifant_Analyzer
+```
+
+Details zur konservierten Target-Diagnose stehen in
+[`TAB5_RUNTIME_HANG_DEBUG.md`](TAB5_RUNTIME_HANG_DEBUG.md). Der normale
+Produktionsbuild verwendet `TAB5_RUNTIME_DEBUG=0`.
+
+## Logger und DLOG V2
+
+Logs liegen auf FAT32-microSD unter `/sprotz/` als versionierte `.dlog`-Dateien.
+`LOG_START`/`LOG_STOP` und `SPROTZ_START`/`SPROTZ_STOP` steuern den Logger;
+`MARKER` erzeugt einen eigenen Record. Die DLOG-V2-Records enthalten
+selbstbeschreibende Event-Subtypen sowie ECU-/IMU-Daten und Zeit-/Sequenz-
+Provenienz. Konvertierung:
+
+```sh
+./tools/decode_sprotz_log.py input.dlog -o output.csv
+```
+
+## Tests und maßgebliche Dokumente
+
+Die C++-Hosttests liegen in `tests/`; der DLOG-Test läuft mit
+`python3 tests/dlog_v2_test.py`. Architektur- und Loggerguards liegen in
+`tools/`; Host-/Sanitizer-/Targettests und reale ECU-/IMU-/SD-Abnahmen sind in
+[`verification.md`](verification.md) nachgewiesen.
+
+- [`ARCHITECTURE.md`](ARCHITECTURE.md): produktive Analyzer-Architektur.
+- [`../ARCHITECTURE_V2.md`](../ARCHITECTURE_V2.md): verbindliche V2-Verträge.
+- [`../IMPLEMENTATION_PLAN_V2.md`](../IMPLEMENTATION_PLAN_V2.md): historischer,
+  abgeschlossener Implementierungsplan.
+- [`../DIGIFANT_MEASUREMENT_SEMANTICS.md`](../DIGIFANT_MEASUREMENT_SEMANTICS.md):
+  ECU-Felder, Formeln und Evidenz.
+- [`TARGET_ASSERT_XTASKPRIORITYDISINHERIT.md`](TARGET_ASSERT_XTASKPRIORITYDISINHERIT.md):
+  Target-Assert-Nachweis und R7-Entscheidung.
+- [`TAB5_RUNTIME_HANG_DEBUG.md`](TAB5_RUNTIME_HANG_DEBUG.md): Diagnosebuild und
+  Bereitschaft für das offene Runtimeproblem.
+
+`../M5Tab5_Digifant_Proto/` bleibt eine unveränderliche Referenz und wird nicht
+in den Analyzer eingebunden.

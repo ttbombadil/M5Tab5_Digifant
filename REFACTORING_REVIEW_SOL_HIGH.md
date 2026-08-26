@@ -19,11 +19,10 @@ Zwei Ownership-Probleme sind wichtiger als kosmetische Dateigrößen:
 
 Deshalb sollte vor weiteren größeren Features eine kurze, gezielte Konsolidierungsphase stattfinden. Sie soll weder KWP-/Transportlogik neu schreiben noch Queuealgorithmen allgemein vereinheitlichen.
 
-## Umsetzungsstatus R0–R4/R2, R6 und R8
+## Umsetzungsstatus R0–R6, R8 und R9
 
-Die empfohlene Reihenfolge wurde bis einschließlich R4 sowie R2 abgearbeitet;
-R6-Processing, R6-Serial und der rein mechanische R8-Headerschnitt wurden
-inzwischen abgeschlossen. R5 und R9 wurden nicht begonnen; R7 bleibt wegen
+Die empfohlene Reihenfolge wurde bis einschließlich R6, R8 und R9 abgearbeitet;
+R5 ist nach dem expliziten Stressbuild-Gate abgeschlossen. R7 bleibt wegen
 des separat dokumentierten, derzeit nicht reproduzierten
 `xTaskPriorityDisinherit`-Asserts blockiert.
 
@@ -36,7 +35,9 @@ des separat dokumentierten, derzeit nicht reproduzierten
 | R4 | PASS | Der byteidentische `third_party/.../src`-Doppelbaum wurde entfernt. `src/esp_usb_host_fork/` bleibt die einzige gebaute Source of Truth; Lizenz, Pin und Vorpatch-Hashes bleiben in `third_party/.../PIN.md`. |
 | R6-Processing | PASS | `src/processing_service.h` besitzt Decoder und `MeasurementModel`, verarbeitet genau einen bounded Pollschritt und publiziert die bestehenden Logger-/Snapshotkopien. Serial bleibt bewusst in der `.ino`. |
 | R6-Serial | PASS | `src/serial_consumer.h` kapselt die bestehenden Kommandos, Snapshot-/Logger-/SD-/IMU-Ausgaben und Formatierung; der Taskadapter in der `.ino` behält Task und Delay unverändert. |
+| R5 | PASS | Bluetooth-/Web-Dummyconsumer sind im Produktionsbuild deaktiviert und nur bei `V2_015_TARGET_STRESS=1` aktiv; Host-, Produktions- und Stressbuild-Gates bleiben dokumentiert. |
 | R8 | PASS | Snapshot-DTO und Mailbox/Fanout sowie Logger-Typen, Channels, DLOG-Format und Core liegen in flachen Verantwortungsheadern; `DisplayUi` behält API und Layout, seine Implementierung liegt nun in `display_ui.cpp`. |
+| R9 | PASS | Nicht produktiv verwendete `GenerationTracker`, `OperationLifecycle`, `KwpReceiveService`, `KwpRunnerModel` und `UiState` entfernt; ihre Verträge werden durch klar benannte Tests gegen reale KWP-/Snapshot-Komponenten geprüft. R7 bleibt BLOCKED. |
 
 Die R1/R2-Änderungen wurden kompiliert und auf dem realen Target
 `/dev/cu.usbmodem2101` geprüft. In einem Lauf von mehr als 60 Sekunden wurden
@@ -48,8 +49,8 @@ bei diesem Gate keine SD-Karte eingelegt war; das ist unabhängig von KWP und
 kein Refactoringfehler.
 
 Damit sind die strukturellen Ownership- und Duplikatprobleme mit dem besten
-Nutzen/Risiko-Verhältnis behoben. R5 sowie die späteren R7–R9-Schritte bleiben
-bewusst ausstehend.
+Nutzen/Risiko-Verhältnis behoben. R7 bleibt
+wegen des offenen Target-Assert-Gates BLOCKED.
 
 ## Prüfgrundlage (Review-Baseline)
 
@@ -57,13 +58,13 @@ Geprüft wurden:
 
 - `M5Tab5_Digifant_Analyzer.ino` und alle projektspezifischen Header unter `src/`;
 - der zum Reviewzeitpunkt gepinnte EspUsbHost-Fork und seine zweite Kopie unter `third_party/`;
-- alle 28 C++-Hosttests, der Python-DLOG-V2-Test und die statischen Pipelinechecks;
+- alle 30 aktuellen C++-Hosttests, der Python-DLOG-V2-Test und die statischen Pipelinechecks;
 - `ARCHITECTURE_V2.md`, `IMPLEMENTATION_PLAN_V2.md`, `DIGIFANT_MEASUREMENT_SEMANTICS.md`;
 - projektlokale `README.md`, `ARCHITECTURE.md` und `verification.md`.
 
 Aktuell ausgeführt und grün:
 
-- 28/28 C++-Hosttests mit C++20 und `-Wall -Wextra -Wpedantic -Werror`;
+- 30/30 C++-Hosttests mit C++20 und `-Wall -Wextra -Wpedantic -Werror`;
 - `tests/dlog_v2_test.py`;
 - `tools/check_pipeline_v2_015.sh` einschließlich V2-009/010/013/014;
 - `tools/check_sprotz_logger.sh`.
@@ -153,9 +154,14 @@ Die Datenrichtung ist ähnlich, die Ownership- und Schedulingdarstellung aber ni
 
 #### E. Abnahme-Dummys laufen dauerhaft im Produkt
 
-Bluetooth und Web sind noch keine Funktionen, belegen aber jeweils Mailbox, Taskhandle, Taskstack und permanente Task. Sie erhöhen außerdem den globalen `snapshotOverwrites`-Wert absichtlich. Das war für V2-015 sinnvoll, ist nach dessen PASS aber historischer Abnahmecode im Produktivpfad.
+Bluetooth und Web sind noch keine Funktionen. Ihre Mailboxen bleiben als
+prüfbare Fanout-Erweiterung erhalten; Tasks und optionale Publikation sind im
+normalen Build deaktiviert. Nur der explizite `V2_015_TARGET_STRESS`-Build
+aktiviert sie und darf dadurch zusätzliche `snapshotOverwrites` erzeugen.
 
-Der Compile-Schalter `V2_015_TARGET_STRESS` ist als gezielte Testinstrumentierung vertretbar. Die immer aktiven Dummy-Tasks sollten dagegen nicht als Produktarchitektur ausgegeben werden.
+Der Compile-Schalter `V2_015_TARGET_STRESS` ist als gezielte Testinstrumentierung
+vertreten. Die Dummy-Tasks sind im Produktionsbuild deaktiviert und werden nicht
+als Produktarchitektur ausgegeben.
 
 #### F. Architekturchecks verhindern sinnvolle Dateiauslagerung
 
@@ -274,7 +280,7 @@ Auch DLOG V1 und V2 sind keine unnötige Doppelstruktur: V1-Lesbarkeit ist ein V
 - Die Definition of Done enthält zahlreiche offene Checkboxen, obwohl `verification.md` V2-009 bis V2-019 als PASS dokumentiert.
 - Komponenten- und Tasknamen entsprechen teils dem Zielbild, nicht der Implementierung: kein produktiver `EspUsbHostPort`, `FtdiK409Phy`, `KwpProtocolRunner` oder `ProtocolStatusMailbox`; KWP läuft aus `loop()` statt einer expliziten Priority-6-Task.
 - Die Organisationsskizze enthält jetzt die real vorhandenen `processing_service.h` und `serial_consumer.h`; `display_consumer.h` bleibt bewusst nicht angelegt.
-- Bluetooth/Web werden als spätere Consumer dargestellt, laufen aber bereits als Dummy-Tasks.
+- Bluetooth/Web werden als spätere Consumer dargestellt; ihre Dummy-Tasks laufen nur im expliziten Stressbuild.
 - „Queue Länge eins“ ist semantisch Latest-Value korrekt, die reale racy-freie Implementierung nutzt aber drei interne Slots. Das sollte erklärt werden.
 
 ### `IMPLEMENTATION_PLAN_V2.md`

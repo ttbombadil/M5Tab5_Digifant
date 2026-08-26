@@ -7,6 +7,7 @@
 
 #include "display_ui_model.h"
 #include "logger_channels.h"
+#include "runtime_debug.h"
 
 namespace digifant::ui {
 
@@ -15,10 +16,11 @@ namespace digifant::ui {
 class DisplayUi {
  public:
   void bindLogger(logging::LoggerCommandQueue& commands) noexcept;
+  void bindRuntimeDebug(runtime::RuntimeDebug* debug) noexcept;
   void consumeLoggerStatus(const logging::LoggerStatus& status) noexcept;
   void begin();
   void consume(const MeasurementSnapshot& snapshot) noexcept;
-  void setTabFromSerial(uint8_t tab) noexcept;
+  void setTabFromSerial(uint8_t tab, uint32_t requestSequence = 0) noexcept;
   void update();
   const DisplayUiModel& model() const noexcept;
 
@@ -78,10 +80,12 @@ class DisplayUi {
 
   static constexpr int16_t kLoggerButtonY = 600;
   static constexpr int16_t kLoggerButtonH = 92;
-  static constexpr int16_t kStartButtonX = 700;
-  static constexpr int16_t kStartButtonW = 330;
-  static constexpr int16_t kMarkerButtonX = 1045;
-  static constexpr int16_t kMarkerButtonW = 220;
+  static constexpr int16_t kLogButtonX = 560;
+  static constexpr int16_t kLogButtonW = 230;
+  static constexpr int16_t kSprotzButtonX = 800;
+  static constexpr int16_t kSprotzButtonW = 270;
+  static constexpr int16_t kMarkerButtonX = 1085;
+  static constexpr int16_t kMarkerButtonW = 180;
 
   LGFX_Sprite tileSprite_{&M5.Display};
   LGFX_Sprite statusSprite_{&M5.Display};
@@ -89,6 +93,7 @@ class DisplayUi {
   LGFX_Sprite scopeSprite_{&M5.Display};
   DisplayUiModel model_{};
   logging::LoggerCommandQueue* loggerCommands_ = nullptr;
+  runtime::RuntimeDebug* runtimeDebug_ = nullptr;
   logging::LoggerStatus loggerStatus_{};
   DisplayTab lastDrawnTab_ = static_cast<DisplayTab>(255);
   int16_t width_ = 0;
@@ -96,6 +101,7 @@ class DisplayUi {
   uint32_t lastDrawMs_ = 0;
   uint32_t lastSpriteInitMs_ = 0;
   uint8_t spriteInitAttempts_ = 0;
+  uint32_t appliedTabSequence_ = 0;
   bool ready_ = false;
   bool needLayout_ = true;
   bool loggerDirty_ = true;

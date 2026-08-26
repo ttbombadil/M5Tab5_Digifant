@@ -123,8 +123,8 @@ funktionierenden Produktivlogik.
 11. Jeder Consumer besitzt einen eigenen bounded Kanal. Ein langsamer Consumer
     kann keinen anderen Consumer oder Upstream-Task blockieren.
 12. Bluetooth und Webserver werden ausschließlich durch zusätzliche
-    Snapshot-Mailboxen und Consumer ergänzt; die aktuell mitlaufenden Dummy-
-    Consumer sind Abnahmewerkzeuge und keine Produktfunktionen.
+    Snapshot-Mailboxen und Consumer ergänzt; Dummy-Consumer sind ausschließlich
+    im expliziten Stressbuild aktiv und keine Produktfunktionen.
 13. Nach Startup gibt es im zeitkritischen Pfad keine dynamische Allokation,
     Stringformatierung, Datei-, Netzwerk-, Serial- oder Displayoperation.
 14. Jeder Ring und jede Queue hat feste Kapazität, Full-Policy, Dropzähler und
@@ -559,7 +559,7 @@ M5Tab5_Digifant_Analyzer/
 ├── src/
 │   ├── esp_usb_host_fork/
 │   ├── rx_ingress_ring.h
-│   ├── transport_operation_lifecycle.h
+│   ├── kwp1281_core.h
 │   ├── kwp_*.h
 │   ├── validated_frame_queue.h
 │   ├── digifant_decoder.h

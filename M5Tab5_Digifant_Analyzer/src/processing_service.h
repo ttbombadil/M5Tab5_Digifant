@@ -67,9 +67,7 @@ class ProcessingService {
       statusChanged = true;
     }
 
-    const uint32_t snapshotOverwrites =
-        snapshots_.serial().overwrites() + snapshots_.display().overwrites() +
-        snapshots_.bluetooth().overwrites() + snapshots_.web().overwrites();
+    const uint32_t snapshotOverwrites = snapshots_.overwrites();
     const bool telemetryChanged = measurementModel_.onRuntimeTelemetry(
         frames_.nextSequence(), frames_.drops(), rxIngress_.dropped(),
         status.parserRejects, status.actionFailures, status.byteEngineFault,

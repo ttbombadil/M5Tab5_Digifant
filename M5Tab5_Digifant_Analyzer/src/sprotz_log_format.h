@@ -112,7 +112,16 @@ class BinaryLogV2Format {
   static constexpr std::size_t kHeaderSize = 64;
   static constexpr std::size_t kRecordHeaderSize = 26;
   static constexpr std::size_t kMaxPayloadSize = BinaryLogFormat::kRecordSize;
+  static constexpr uint8_t kEventPayloadSchemaV1 = 1;
+  static constexpr std::size_t kEventPayloadSize = 2;
   using Header = std::array<uint8_t, kHeaderSize>;
+  using EventPayload = std::array<uint8_t, kEventPayloadSize>;
+
+  enum class EventSubtype : uint8_t {
+    SprotzStart = 1,
+    SprotzStop = 2,
+    Marker = 3,
+  };
 
   static Header header(uint64_t startedAtUs) noexcept {
     Header out{}; constexpr char magic[8] = {'D','G','F','T','S','P','T','2'};
@@ -137,6 +146,12 @@ class BinaryLogV2Format {
 
   static std::array<uint8_t, 16> orientationPayload() noexcept {
     std::array<uint8_t, 16> out{}; out[0] = 1; out[1] = 1; out[2] = 2; return out;
+  }
+
+  // Event payloads are deliberately versioned inside V2. Existing V2 MARKER
+  // records have an empty payload and remain valid legacy markers.
+  static EventPayload eventPayload(EventSubtype subtype) noexcept {
+    return {kEventPayloadSchemaV1, static_cast<uint8_t>(subtype)};
   }
 
   using Record = std::array<uint8_t, kRecordHeaderSize + kMaxPayloadSize>;

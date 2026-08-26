@@ -52,10 +52,13 @@ int main() {
   digifant::serial::SerialConsumer<FakeSerial> consumer(
       commands, loggerStatus, snapshots, imuDiagnostics, tabRequest, serial);
 
-  serial.input = "START\nSTOP\nMARKER\nTAB 2\nSTATUS\nSD_STATUS\nUNKNOWN\n";
+  serial.input = "LOG_START\nSPROTZ_START\nSPROTZ_STOP\nLOG_STOP\nMARKER\n"
+                 "TAB 2\nSTATUS\nSD_STATUS\nUNKNOWN\n";
   consumer.poll(fixedNow, nullptr);
-  assert(serial.output.find("SERIAL_CMD START QUEUED ts=4242\n") != std::string::npos);
-  assert(serial.output.find("SERIAL_CMD STOP QUEUED ts=4242\n") != std::string::npos);
+  assert(serial.output.find("SERIAL_CMD LOG_START QUEUED ts=4242\n") != std::string::npos);
+  assert(serial.output.find("SERIAL_CMD SPROTZ_START QUEUED ts=4242\n") != std::string::npos);
+  assert(serial.output.find("SERIAL_CMD SPROTZ_STOP QUEUED ts=4242\n") != std::string::npos);
+  assert(serial.output.find("SERIAL_CMD LOG_STOP QUEUED ts=4242\n") != std::string::npos);
   assert(serial.output.find("SERIAL_CMD MARKER QUEUED ts=4242\n") != std::string::npos);
   assert(serial.output.find("SERIAL_CMD TAB 2 QUEUED\n") != std::string::npos);
   assert(serial.output.find("SD_STATUS WAITING_FOR_LOGGER_STATUS\n") != std::string::npos);
@@ -63,9 +66,11 @@ int main() {
   assert(tabRequest.load(std::memory_order_acquire) == 2);
 
   digifant::logging::LoggerCommand command{};
-  assert(commands.tryReceive(command) && command.kind == digifant::logging::LoggerCommandKind::Start);
+  assert(commands.tryReceive(command) && command.kind == digifant::logging::LoggerCommandKind::LogStart);
   assert(command.timestampUs == 4242);
-  assert(commands.tryReceive(command) && command.kind == digifant::logging::LoggerCommandKind::Stop);
+  assert(commands.tryReceive(command) && command.kind == digifant::logging::LoggerCommandKind::SprotzStart);
+  assert(commands.tryReceive(command) && command.kind == digifant::logging::LoggerCommandKind::SprotzStop);
+  assert(commands.tryReceive(command) && command.kind == digifant::logging::LoggerCommandKind::LogStop);
   assert(commands.tryReceive(command) && command.kind == digifant::logging::LoggerCommandKind::Marker);
 
   digifant::logging::LoggerStatus status{};
@@ -78,7 +83,7 @@ int main() {
   std::strcpy(status.fileName.data(), "/sprotz/test.dlog");
   loggerStatus.publish(status);
   consumer.poll(fixedNow, nullptr, fixedStack, nullptr);
-  assert(serial.output.find("SPROTZ_LOGGER state=2 error=0 records=12 events=3") != std::string::npos);
+  assert(serial.output.find("SPROTZ_LOGGER state=2 error=0 sprotz_active=0 records=12 events=3") != std::string::npos);
   assert(serial.output.find("storage_present=1 file=/sprotz/test.dlog\n") != std::string::npos);
   assert(serial.output.find("SPROTZ_STACK_FREE_WORDS=77\n") != std::string::npos);
 
@@ -116,5 +121,22 @@ int main() {
   serial.readIndex = 0;
   consumer.poll(fixedNow, nullptr);
   assert(serial.output.find("SERIAL_CMD OVERLONG\n") != std::string::npos);
+
+  digifant::runtime::RuntimeDebug debug;
+  FakeSerial debugSerial;
+  std::atomic<uint8_t> debugTabRequest{255};
+  digifant::serial::SerialConsumer<FakeSerial> debugConsumer(
+      commands, loggerStatus, snapshots, imuDiagnostics, debugTabRequest, debugSerial, &debug);
+  debugSerial.input = "TAB 3\nDEBUG_STATUS\n";
+  debugConsumer.poll(fixedNow, nullptr);
+  assert(debugTabRequest.load(std::memory_order_acquire) == 3);
+  assert(debug.serialPolls() == 1);
+  assert(debug.serialRxBytes() == debugSerial.input.size());
+  assert(debug.serialCommands() == 2);
+  assert(debug.serialResponsesStarted() == 2);
+  assert(debug.serialResponsesCompleted() == 2);
+  assert(debugSerial.output.find("DEBUG_TASK name=display") != std::string::npos);
+  assert(debugSerial.output.find("DEBUG_SERIAL polls=1 rx_bytes=19 commands=2") !=
+         std::string::npos);
   return 0;
 }

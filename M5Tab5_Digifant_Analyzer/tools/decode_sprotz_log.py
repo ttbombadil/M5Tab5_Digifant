@@ -32,7 +32,7 @@ def decode_v1_bytes(data: bytes, output) -> None:
         raise ValueError(f"truncated log: {payload % RECORD_SIZE} trailing bytes")
 
     columns = [
-        "kind", "event_timestamp_us", "snapshot_timestamp_us", "sequence", "session_epoch",
+        "kind", "event_subtype", "event_timestamp_us", "snapshot_timestamp_us", "sequence", "session_epoch",
         "transport_generation", "frame_count", "frame_drops", "rx_drops", "parser_rejects",
         "action_failures", "snapshot_overwrites", "fault_count", "rpm", "byte_fault",
         "validity", "k409", "kwp", "ecu",
@@ -60,6 +60,7 @@ def decode_v1_bytes(data: bytes, output) -> None:
         flags = record[68]
         row = {
             "kind": KINDS.get(kind, f"UNKNOWN_{kind}"), "event_timestamp_us": event_us,
+            "event_subtype": "MARKER_LEGACY" if kind == 4 else "",
             "snapshot_timestamp_us": snapshot_us, "sequence": sequence, "session_epoch": session,
             "transport_generation": generation, "frame_count": frames, "frame_drops": frame_drops,
             "rx_drops": rx_drops, "parser_rejects": rejects, "action_failures": actions,
@@ -93,6 +94,8 @@ V2_HEADER_SIZE = 64
 V2_RECORD_HEADER_SIZE = 26
 V2_KINDS = {1: "ECU_SNAPSHOT", 2: "IMU_SAMPLE", 3: "START", 4: "STOP",
             5: "MARKER", 6: "IMU_ORIENTATION"}
+EVENT_PAYLOAD_SCHEMA_V1 = 1
+EVENT_SUBTYPES = {1: "SPROTZ_START", 2: "SPROTZ_STOP", 3: "MARKER"}
 
 
 def _fnv1a(data: bytes) -> int:
@@ -102,13 +105,24 @@ def _fnv1a(data: bytes) -> int:
     return value
 
 
+def _decode_marker_event_subtype(payload: bytes) -> str:
+    if len(payload) == 0:
+        return "MARKER_LEGACY"
+    if len(payload) != 2:
+        raise ValueError(f"invalid V2 MARKER payload length {len(payload)}")
+    schema, subtype = payload
+    if schema != EVENT_PAYLOAD_SCHEMA_V1:
+        return f"UNKNOWN_EVENT_SCHEMA_{schema}"
+    return EVENT_SUBTYPES.get(subtype, f"UNKNOWN_EVENT_SUBTYPE_{subtype}")
+
+
 def decode_v2_bytes(data: bytes, output) -> None:
     if len(data) < V2_HEADER_SIZE or data[:8] != b"DGFTSPT2":
         raise ValueError("not a DGFTSPT2 log")
     version, header_size = struct.unpack_from("<HH", data, 8)
     if version != 2 or header_size != V2_HEADER_SIZE:
         raise ValueError("unsupported DLOG V2 header")
-    columns = ["kind", "timestamp_us", "sequence", "validity", "accel_x_mg",
+    columns = ["kind", "event_subtype", "timestamp_us", "sequence", "validity", "accel_x_mg",
                "accel_y_mg", "accel_z_mg", "gyro_x_mdps", "gyro_y_mdps",
                "gyro_z_mdps", "payload_length"]
     columns += [f"g{group:03d}_z{zone}_raw" for group, zone in FIELD_KEYS]
@@ -127,7 +141,8 @@ def decode_v2_bytes(data: bytes, output) -> None:
         payload = data[offset + rec_header:offset + rec_header + payload_len]
         if _fnv1a(payload) != checksum:
             raise ValueError(f"V2 payload checksum mismatch at byte {offset}")
-        row = {"kind": V2_KINDS.get(kind, f"UNKNOWN_{kind}"), "timestamp_us": timestamp,
+        row = {"kind": V2_KINDS.get(kind, f"UNKNOWN_{kind}"), "event_subtype": "",
+               "timestamp_us": timestamp,
                "payload_length": payload_len}
         if kind == 1:
             if payload_len != RECORD_SIZE:
@@ -147,6 +162,8 @@ def decode_v2_bytes(data: bytes, output) -> None:
                         "accel_y_mg": values[3], "accel_z_mg": values[4],
                         "gyro_x_mdps": values[5], "gyro_y_mdps": values[6],
                         "gyro_z_mdps": values[7], "validity": values[8]})
+        elif kind == 5:
+            row["event_subtype"] = _decode_marker_event_subtype(payload)
         writer.writerow(row)
         offset += rec_header + payload_len
 

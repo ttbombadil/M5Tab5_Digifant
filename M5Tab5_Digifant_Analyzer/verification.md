@@ -141,9 +141,8 @@ wurde nicht vorgenommen.
 
 ### Tests
 
-- `transport_operation_lifecycle_test`: PASS. Active/Retiring/Retired,
-  Tokenkorrelation, stale/duplicate Completion, Timeout, Retirement und
-  Generationstrennung.
+- `kwp_measurement_session_lifecycle_test`: PASS. Produktive Session-
+  Tokenkorrelation, stale Completion und Disconnect-Quieszenz.
 - `k409_device_filter_test`: PASS.
 - Targetcompile mit lokalem Fork und Arduino-ESP32 3.3.10: PASS.
 - Target-Seriallauf mit echtem K409: Control- und TX-Completions wurden
@@ -208,7 +207,7 @@ Ausgeführte Tests:
 
 ```text
 c++ -std=c++20 -Wall -Wextra -Wpedantic -Werror ... rx_ingress_poison_test.cpp: PASS
-c++ -std=c++20 -Wall -Wextra -Wpedantic -Werror ... transport_operation_lifecycle_test.cpp: PASS
+c++ -std=c++20 -Wall -Wextra -Wpedantic -Werror ... kwp_measurement_session_lifecycle_test.cpp: PASS
 c++ -std=c++20 -Wall -Wextra -Wpedantic -Werror ... k409_device_filter_test.cpp: PASS
 c++ -std=c++20 -fsanitize=address,undefined ... rx_ingress_poison_test.cpp: PASS
 arduino-cli compile --fqbn esp32:esp32:m5stack_tab5 M5Tab5_Digifant_Analyzer: PASS
@@ -369,25 +368,22 @@ Längen-/Datenbyte-ACKs und ungequittetes Terminatorbyte. Die Bytes kommen in V2
 jedoch ausschließlich aus dem festen RX-Ingress; UI und USB werden nicht von
 der Engine aufgerufen.
 
-Neu erstellt wurden `src/kwp_byte_engine.h`, `src/kwp_receive_service.h` und
-`tests/kwp_byte_engine_test.cpp`. Der Test prüft tokenfreie Byte-Engine-
-Semantik unabhängig vom Transport: Host-Echo/ACK, Completion vor Echo,
-ECU-Frameaufbau mit inversen ACKs, Terminatorprüfung und Echo-Mismatch-Fault.
-Der Receive-Service konsumiert ausschließlich Wertrecords im Runner-Kontext;
-USB-Callbacks rufen ihn nicht direkt auf. Warnings-as-errors und ASan/UBSan
-liefen grün.
+Neu erstellt wurden `src/kwp_byte_engine.h` und
+`tests/kwp_byte_engine_test.cpp`. Der Test prüft die produktiv verwendete
+Byte-Engine direkt: Host-Echo/ACK, Completion vor Echo, ECU-Frameaufbau mit
+inversen ACKs, Terminatorprüfung und Echo-Mismatch-Fault. Der frühere
+`KwpReceiveService`-Wrapper war kein Runtimepfad und wurde in R9 entfernt.
+Warnings-as-errors und ASan/UBSan liefen grün.
 
 Der konkrete Target-ECU-Runner ist inzwischen Bestandteil des geflashten
 Low-Level-Builds. Die endgültige V2-004-Freigabe (insbesondere Logic-Analyzer-
 Timing und vollständiger ECU-End-to-End-Nachweis) bleibt davon getrennt und
 wird nicht vorweggenommen.
 
-Zusätzlich verbindet `src/kwp_runner_model.h` den Core und den Receive-Service
-über typisierte Wert-Events. Der Runner verarbeitet Connected/Disconnected,
-RX-Bytes, Completionen und Zeitfortschritt; Aktionen werden als feste
-tokenisierte Wertobjekte aus dem Core abgeholt. Ein Test weist stale
-Completionen aus falscher Generation und Disconnect während einer aktiven
-Aktion zurück. Host-Warnings-as-errors und ASan/UBSan: PASS.
+Der frühere `KwpRunnerModel` war ausschließlich ein Test-Schatten und wurde in
+R9 entfernt. Die entsprechenden Generations- und Completionverträge prüfen
+`kwp_measurement_session_lifecycle_test.cpp` und
+`kwp_protocol_core_token_test.cpp` direkt gegen die produktiven Komponenten.
 
 ## V2-004 – erster integrierter Target-KWP-Probe
 
@@ -449,11 +445,14 @@ Timingqualifikation und die vollständige Mess-/ECU-Freigabe.
 
 ## V2-008 – Snapshot-UI
 
-Implementiert wurden `src/measurement_snapshot.h`, `src/ui_state.h` und der
-Hosttest `tests/ui_snapshot_test.cpp`. Snapshots werden als vollständige
+Implementiert wurden `src/measurement_snapshot.h` und die produktiven
+Snapshot-Mailboxen/Fanout-Komponenten. Snapshots werden als vollständige
 Wertkopien in einer Latest-Mailbox veröffentlicht; ein langsamer Leser erhält
 den neuesten konsistenten Zustand, während Zwischenstände als Overwrite gezählt
-werden. Gültigkeit `Valid`, `Stale` und `Disconnected` bleibt sichtbar.
+werden. Gültigkeit `Valid`, `Stale` und `Disconnected` bleibt sichtbar. Der
+frühere `UiState`-Wrapper und `ui_snapshot_test.cpp` waren keine Runtimegrenze;
+R9 prüft denselben Vertrag in `snapshot_runtime_boundary_test.cpp` gegen den
+realen Fanout.
 
 Hosttests einschließlich ASan/UBSan: PASS. Der Target-Smoke-Test wurde auf dem
 realen Tab5 geflasht und über Serial verifiziert:
@@ -1126,7 +1125,9 @@ Action-Fehler. V2-013 Status: `PASS`; nächster Schritt ist V2-014
 ## V2-014 – Display als unabhängiger Snapshot-Consumer
 
 Der Display-Task liest ausschließlich `display_snapshot_mailbox` über den
-vorhandenen `UiState`-Snapshotpfad und rendert RPM, Rohwerte und Validität.
+vorhandenen Snapshotpfad und rendert RPM, Rohwerte und Validität. Der frühere
+`UiState`-Testwrapper ist in R9 entfernt; die Laufzeit verwendet
+`DisplayUiModel`.
 Die bisherige M5Unified-Initialisierung bleibt erhalten; der KWP-Startpfad
 führt keine Displayaufrufe mehr aus. `check_pipeline_v2_014.sh` verhindert
 direkte USB-/KWP-/Decoderabhängigkeiten in den UI-Headern.
@@ -2508,7 +2509,9 @@ Fehler tritt im nicht-mutierenden Gate nicht auf; er bleibt als bestehendes
 Target-/Loggerproblem außerhalb R6 offen und wurde nicht durch eine unzulässige
 Loggeränderung kaschiert.
 
-Status: **R6 vollständig abgeschlossen**. R7, R8 und R9 wurden nicht begonnen.
+Status zum Abschluss von R6: **R6 vollständig abgeschlossen**. Die späteren
+Schritte R8 und R9 sind in den nachfolgenden Abschnitten separat dokumentiert;
+R7 bleibt wegen des offenen Target-Assert-Gates BLOCKED.
 
 ## Untersuchung `xTaskPriorityDisinherit` – 2026-08-25
 
@@ -2580,5 +2583,221 @@ unverändert.
 
 Ein formales 60-s-ECU-Gate war für den rein mechanischen Schnitt nicht
 erforderlich. R8 ist **PASS und abgeschlossen**. R7 bleibt ausdrücklich
-**BLOCKED**. R9 kann als separater Test-/Schattenabstraktionsschritt begonnen
-werden; eine neue produktive Runtimeverdrahtung ist dabei nicht freigegeben.
+**BLOCKED**. Die anschließende R9-Test-/Schattenbereinigung ist im folgenden
+Abschnitt dokumentiert; eine produktive Runtimeverdrahtung wurde dabei nicht
+freigegeben.
+
+## R9 – Schattenabstraktionen bereinigt – 2026-08-25
+
+Die Vorher-/Nachher-Vertragsmatrix liegt in
+`../R9_CONTRACT_MATRIX.md`. Die fünf untersuchten Typen waren nicht Teil der
+ausgelieferten Runtime: `GenerationTracker` wurde nicht von den USB-Callbacks
+verwendet, `OperationLifecycle` und `KwpRunnerModel` modellierten nicht die
+produktive KWP-Verdrahtung, `KwpReceiveService` war nur ein Wrapper des
+Schattenmodells und `UiState` war ein ungenutzter Include-/Mailboxvorläufer.
+
+Entfernt wurden ausschließlich diese ungenutzten Header:
+
+- `src/transport_operation_lifecycle.h`
+- `src/kwp_receive_service.h`
+- `src/kwp_runner_model.h`
+- `src/ui_state.h`
+
+`GenerationTracker` wurde aus `src/k409_device_filter.h` entfernt; die
+produktive Funktion `k409::matches()` und ihr Test bleiben bestehen. Die
+Schatten-Tests wurden nicht ersatzlos gestrichen:
+
+- `kwp_measurement_session_lifecycle_test.cpp` prüft reale Session-
+  Generation/Token-Korrelation und Disconnect-Verhalten;
+- `kwp_protocol_core_token_test.cpp` prüft stale Completion direkt am realen
+  `KwpProtocolCore`;
+- `snapshot_runtime_boundary_test.cpp` prüft den produktiven Snapshot-Fanout;
+- `kwp_byte_engine_test.cpp` prüft weiterhin die produktive Byte-Engine ohne
+  Receive-Service-Wrapper.
+
+Die Hosttestzahl blieb unverändert bei 30 (vorher/nachher). Verifikation:
+
+- C++20 Hosttests mit Warnings-as-errors: **30/30 PASS**;
+- ASan/UBSan: **30/30 PASS**;
+- relevante TSan-Tests (`snapshot_mailboxes`, `sprotz_logger`,
+  `imu_sample_ring`, `processing_service`, `serial_consumer`,
+  `v2_015_decoupling`): **6/6 PASS**;
+- DLOG-V2-Test: **PASS**;
+- Architekturguards V2-009, V2-010, V2-013, V2-014, V2-015 und
+  `check_sprotz_logger.sh`: **PASS**;
+- Arduino-Targetcompile `esp32:esp32:m5stack_tab5`: **PASS**, 917530 Byte
+  Flash, 157012 Byte globale Daten.
+
+Es wurden keine produktiven Runtimeobjekte neu verdrahtet, keine Task-,
+Queue-, KWP-, Transport- oder Loggerverträge geändert und keine
+DLOG-/Snapshotdatenformate verändert. Die produktive Runtime und die
+Targetgröße bleiben gegenüber dem R8-Build unverändert (917530 Byte Flash,
+157012 Byte globale Daten); ein separater Bit-Hashvergleich des ELF wurde nicht
+durchgeführt. Ein reales ECU-Gate war daher nicht erforderlich.
+
+R9 ist abgeschlossen. Verbleibende technische Schulden sind vor allem die
+offene KWP-Targetkapselung (R7) und der nicht reproduzierte
+`xTaskPriorityDisinherit`-Assert im Logger-/SD-Pfad. R7 bleibt ausdrücklich
+**BLOCKED**; R9 liefert keine Freigabe für R7.
+
+## R5 – Dummyconsumer nur im expliziten Stressbuild – 2026-08-25
+
+R5 entfernt die historischen Bluetooth-/Web-Dummyconsumer aus dem normalen
+Produktionsbuild. Der Compile-Time-Schalter `V2_015_TARGET_STRESS` ist
+standardmäßig `0`. Dann werden weder `bluetooth_snapshot_dummy` noch
+`web_snapshot_dummy` als Task angelegt und `SnapshotConsumerFanout` publiziert
+nur an Serial und Display. Die optionalen Mailboxen und ihre Fanout-Methoden
+bleiben als bewährte, hosttestbare Erweiterungsgrenze vorhanden, sind aber im
+Produktionsbuild inaktiv. Queue-/Mailboxtypen und Slotsemantik wurden nicht
+geändert.
+
+Bei `V2_015_TARGET_STRESS=1` werden beide langsamen Dummyconsumer, ihre
+Taskhandles und die optionale Snapshotpublikation aktiviert. Der bestehende
+500-ms-Displaystall bleibt ausschließlich in diesem Stressbuild aktiv. Damit
+bleiben die V2-015-/Decoupling-Nachweise erhalten, ohne Bluetooth- oder
+Webfunktion zu implementieren.
+
+Änderungen:
+
+- `M5Tab5_Digifant_Analyzer.ino`: optionale Dummyobjekte, Taskhandles und
+  `xTaskCreate`-Aufrufe unter den Stressschalter gestellt;
+- `src/measurement_snapshot_mailbox.h`: explizite Aktivierung optionaler
+  Consumer und Overwritezählung nur für aktivierte Consumer;
+- `src/processing_service.h`: bestehende Snapshottelemetrie nutzt die
+  Fanoutzählung, ohne Decoder-/Model-/Queueverhalten zu verändern;
+- `tests/v2_015_decoupling_test.cpp`: Stressfixture aktiviert optionale
+  Consumer explizit;
+- `tests/snapshot_runtime_boundary_test.cpp`: Produktionsfanout prüft, dass
+  optionale Consumer deaktiviert bleiben;
+- `tools/check_pipeline_v2_015.sh`: prüft Produktions-/Stressschalter und
+  weiterhin die einzige Pipeline.
+
+Verifikation:
+
+- vollständige Hosttests: **30/30 PASS**;
+- ASan/UBSan: **30/30 PASS**;
+- relevante TSan-Tests: **6/6 PASS**;
+- DLOG-Test: **PASS**;
+- Architekturguards V2-009, V2-010, V2-013, V2-014, V2-015 und Loggerguard:
+  **PASS**;
+- Produktions-Targetcompile: **PASS**, 917220 Byte Flash, 157020 Byte globale
+  Daten;
+- Stress-Targetcompile mit `-DV2_015_TARGET_STRESS=1`: **PASS**, 917596 Byte
+  Flash, 157028 Byte globale Daten.
+
+Der reale Produktionslauf auf `/dev/cu.usbmodem2101` dauerte 65 Sekunden und
+zeigte Generation 1/Session 1 mit `k409=1`, `kwp=1`, `ecu=1`, Gruppenbetrieb,
+`frame_drops=0`, `rx_drops=0`, `action_failures=0`, Logger-/IMU-Drops 0 sowie
+`storage_present=1`. Der finale Produktionssnapshot hatte
+`snapshot_overwrites=2`; diese stammen nur aus den realen Serial-/Display-
+Mailboxen, nicht aus Dummyconsumern.
+
+Der reale Stresslauf dauerte ebenfalls 65 Sekunden. Er blieb bei
+`k409=1`, `kwp=1`, `ecu=1` und allen relevanten KWP-/Parser-/Actionfehlern 0;
+Logger-/IMU-Drops blieben 0. Die absichtlich langsamen optionalen Consumer
+erzeugten erwartete `snapshot_overwrites` (im Lauf bis 88), ohne KWP,
+Processing, Logger oder IMU zu beeinflussen.
+
+R5 ist damit **PASS und abgeschlossen**. Der `xTaskPriorityDisinherit`-Assert
+wurde nicht verändert oder mitigiert. R7 bleibt ausdrücklich **BLOCKED**.
+
+## Bedienung realer Sprotz-Messfahrten – 2026-08-25
+
+Die Logging-Bedienung trennt nun ausdrücklich `LOG_START`, `LOG_STOP`,
+`SPROTZ_START`, `SPROTZ_STOP` und `MARKER`. Die Kurzbefehle `START`/`STOP`
+bleiben als kompatible Aliase erhalten. `SPROTZ_START` und `SPROTZ_STOP`
+ändern ausschließlich den Sprotz-Ereigniszustand; ECU- und IMU-Aufzeichnung
+bleiben zwischen `LOG_START` und `LOG_STOP` kontinuierlich aktiv. Ungültige
+Übergänge (z. B. ein zweites `SPROTZ_START` oder `SPROTZ_STOP` ohne aktives
+Ereignis) werden deterministisch ignoriert. Ein aktives Ereignis wird im
+Display und in `SPROTZ_LOGGER` als `sprotz_active=1` angezeigt.
+
+Die Zustands-/Markerlogik liegt in `src/sprotz_event_state.h` und wird im
+bestehenden `SprotzLoggerCore` ausgeführt. Für Sprotz-Start, Sprotz-Stop und
+freie Marker werden ausschließlich vorhandene Markerrecords und dieselbe
+monotone Zeitbasis verwendet; DLOG-V1/V2-Bytes und Merge-Reihenfolge bleiben
+unverändert. `tests/sprotz_event_state_test.cpp` prüft Zustandsübergänge,
+ignorierte Doppelbefehle, Markerreihenfolge und das deterministische Schließen
+eines offenen Ereignisses bei `LOG_STOP`.
+
+Verifikation dieses Schritts:
+
+- Hosttests: **31/31 PASS**;
+- ASan/UBSan: **31/31 PASS**;
+- relevante TSan-Tests: **7/7 PASS**;
+- DLOG-Test, Architekturguards und Pipelineguards: **PASS**;
+- Arduino-Produktionscompile: **PASS**, 918076 Byte Flash, 157028 Byte globale
+  Daten;
+- Arduino-Stresscompile: **PASS**, 918446 Byte Flash, 157036 Byte globale
+  Daten.
+
+Der reale Standtest lief mit der Produktionsfirmware, SD, K409/Digifant-ECU und
+IMU. Ausgeführt wurden `LOG_START`, zwei gültige
+`SPROTZ_START`/`SPROTZ_STOP`-Paare, ein zusätzlicher `MARKER`, absichtliche
+Doppelbefehle sowie Tabwechsel und `LOG_STOP`. Die Doppelbefehle erzeugten
+keine zusätzlichen Ereignisse. Der Logger endete mit `state=1`,
+`sprotz_active=0`, `events=7`, `queue_drops=0`,
+`snapshot_queue_drops=0`, `imu_queue_drops=0`, `command_queue_drops=0` und
+`error=0`. Während des gesamten Laufs blieben `kwp=1`, `ecu=1`,
+`frame_drops=0`, `rx_drops=0`, `parser_rejects=0`, `byte_fault=0`,
+`action_failures=0` und `faults=0`; KWP-Snapshots und IMU-Samples liefen vor,
+während und nach der Session weiter.
+
+Die vom Logger gemeldete Datei war `/sprotz/g0_s0_86260534_0.dlog` mit
+`records=29`, `events=7`, `bytes=63518` und `imu_samples=458`. Ein
+nachträglicher Host-Readback/Decoderlauf der physischen SD-Datei war in dieser
+Umgebung nicht möglich, da die vom Target verwendete SD-Karte nicht als
+Host-Volume unter `/Volumes` verfügbar war. Die zeitliche Markerreihenfolge
+ist durch den Host-Regressionstest und die Target-Ereigniszähler abgesichert;
+ein unabhängiger Byte-/Datei-Goldenvergleich der konkreten Standtestdatei
+steht noch aus.
+
+KWP, Processing, IMU-Sampling, Logger-Merge, Queueverträge und R7 wurden nicht
+geändert. Der nicht reproduzierte `xTaskPriorityDisinherit`-Assert bleibt ein
+separates Beobachtungsrisiko.
+
+## DLOG V2 Event-Subtypen – 2026-08-25
+
+V2-`MARKER`-Records sind weiterhin `kind=MARKER` und behalten Record- und
+Hauptversion `2`. Neue Marker verwenden einen FNV-geschützten, zweibyteigen
+Payload: `01 01` = `SPROTZ_START`, `01 02` = `SPROTZ_STOP`, `01 03` = freier
+`MARKER`. `payloadLength=0` bleibt der gültige historische V2-Fall und wird
+vom Hostkonverter als `MARKER_LEGACY` ausgegeben. DLOG V1 und der V2-Header
+bleiben byteunverändert. Das ungeschützte Header-`flags`-Byte trägt keine
+Eventsemantik.
+
+Der CSV-Konverter ergänzt `event_subtype`; Nicht-Marker bleiben leer.
+Unbekannte, strukturell gültige Payloads werden explizit als
+`UNKNOWN_EVENT_SCHEMA_<n>` beziehungsweise `UNKNOWN_EVENT_SUBTYPE_<n>`
+ausgegeben. Eine Marker-Payloadlänge ungleich 0 oder 2 ist ein Decodefehler;
+eine beschädigte Payload wird weiterhin durch die bestehende FNV-Prüfung
+abgelehnt.
+
+Neue Golden-/Roundtrip-Prüfungen decken Legacy-V2-Marker, alle drei neuen
+Subtypen, unbekanntes Schema, unbekannten Subtyp, falsche Payloadlänge und
+beschädigte Payloadchecksumme ab. Die vollständige Hostsuite (**31/31**),
+ASan/UBSan (**31/31**), relevante TSan-Tests (**7/7**), DLOG-Test und alle
+Architekturguards sind PASS. Der Produktions-Targetcompile ist PASS (918200
+Byte Flash, 157028 Byte globale Daten). Die vor der Erweiterung erzeugte reale
+Datei `g0_s0_86260534_0.dlog` dekodiert weiterhin vollständig und enthält fünf
+`MARKER_LEGACY`-Records.
+
+Der reale Target-Smoke erzeugte mit
+`LOG_START → SPROTZ_START → MARKER → SPROTZ_STOP → LOG_STOP` die Datei
+`g0_s0_80838060_0.dlog`. Die SD-Quelle und die Hostkopie haben identische
+SHA-256-Hashes (`9c4176b7ef16e89c842985935a6615003806233cccb9745104fd6ab2ced39b18`).
+Der unabhängige Hostreadback ist DLOG V2, 27906 Byte, 214 Records:
+
+- 13 `ECU_SNAPSHOT`, 195 `IMU_SAMPLE`, 1 `IMU_ORIENTATION`;
+- 1 `START`, 3 `MARKER`, 1 `STOP`;
+- monotone Zeitachse von 80838060 bis 89948865 µs, gültige Recordlängen und
+  FNV-Checksummen;
+- aus den DLOG-Bytes allein: `SPROTZ_START` bei 82875873 µs, freier `MARKER`
+  bei 84878066 µs und `SPROTZ_STOP` bei 86911775 µs;
+- ECU-/IMU-Daten vor dem Sprotz-Ereignis (3/44), währenddessen (7/82) und
+  danach (3/69).
+
+Damit ist die neue Messfahrtdatei selbstbeschreibend; die Event-Subtyp-
+Erweiterung ist auf Target und Host verifiziert. KWP, Processing, IMU, Logger-
+Merge, Queueverträge, R7 und der offene `xTaskPriorityDisinherit`-Befund wurden
+nicht verändert.
