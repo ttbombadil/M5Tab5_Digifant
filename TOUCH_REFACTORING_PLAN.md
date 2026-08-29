@@ -88,7 +88,7 @@ Abnahme:
 
 ### Schritt 1 – Reiner Zustandsautomat
 
-Status: `[ ]`
+Status: `[x]`
 
 - `UiState`, `UiEvent` und Übergangsfunktion aus dem Sketch lösen.
 - Übergangsfunktion ohne Arduino- oder M5-Abhängigkeit implementieren.
@@ -103,7 +103,7 @@ Abnahme:
 
 ### Schritt 2 – Touch-only-Baseline
 
-Status: `[ ]`
+Status: `[>]` – automatische Abnahme bestanden, physische Abnahme offen
 
 - Nur `M5.begin()`, Display und M5Unified-Touch aktivieren.
 - Lautsprecher, Mikrofon, SD, Busdiagnose und Recovery deaktivieren.
