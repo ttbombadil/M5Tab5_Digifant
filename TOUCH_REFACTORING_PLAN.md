@@ -103,12 +103,23 @@ Abnahme:
 
 ### Schritt 2 – Touch-only-Baseline
 
-Status: `[>]` – automatische Abnahme bestanden, physische Abnahme offen
+Status: `[x]` – automatische und physische Abnahme bestanden. Bei etwa 200 Touchabfragen/s
+verstummte die Touch-Datenquelle nach 51 Ereignissen. Mit 50 Hz wurden 213
+Touches ohne Ausfall erkannt; CPU, Heap, Press-Gate und Interruptleitung
+blieben stabil. Speaker-Initialisierung war wirkungslos und ist entfernt.
+Ein Flash-/CPU-Reset liess den separat versorgten Controller jedoch in einem
+undefinierten Zustand. Mit einmaligem TP_RST-Impuls beim Boot wurden ohne
+manuellen Reset 109 Touches in rund 11 Minuten erkannt. Gate, Interrupt,
+Heap und CPU blieben stabil; Lautsprecher und Mikrofon waren deaktiviert.
 
 - Nur `M5.begin()`, Display und M5Unified-Touch aktivieren.
 - Lautsprecher, Mikrofon, SD, Busdiagnose und Recovery deaktivieren.
 - Einen einzigen Touch-Leseweg verwenden. Wie in der nachweislich stabilen
   Touch-Probe wird die Druckflanke aus `isPressed()` und der Freigabe gebildet.
+- Touchcontroller hoechstens alle 20 ms abfragen; Interruptflanken und den
+  gecachten M5Unified-Status passiv protokollieren.
+- Den separat versorgten Touchcontroller bei jedem Programmstart einmal ueber
+  TP_RST zuruecksetzen und erst danach an M5Unified binden.
 - Serielle Ereignisinjektion über denselben `UiEvent`-Pfad führen.
 - Nur notwendige optische Teilaktualisierungen zeichnen.
 

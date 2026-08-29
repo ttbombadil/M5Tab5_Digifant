@@ -5,8 +5,9 @@ bereits den vorgesehenen Zustandsautomaten und die Sechs-Zeilen-Oberflaeche,
 fuehrt aber noch keine Audio- oder Speicherfunktion aus.
 
 Bewusst deaktiviert sind Lautsprecher, Mikrofon, SD, direkte I2C-Diagnose,
-zweite Touch-Lesewege und Touch-Recovery. `M5.update()` wird ausschliesslich
-einmal im Arduino-`loop()` aufgerufen.
+zweite Touch-Lesewege und Laufzeit-Recovery. Der separat versorgte ST7123
+erhaelt beim Boot einmal einen definierten TP_RST-Impuls. `M5.update()` und
+damit die Touchabfrage laufen begrenzt auf 50 Hz beziehungsweise alle 20 ms.
 
 ## Zustandsfolge
 
@@ -47,3 +48,8 @@ arduino-cli compile --fqbn esp32:esp32:m5stack_tab5 \
 Die physische Abnahme besteht aus mindestens 100 Einzeltouches beziehungsweise
 20 vollstaendigen Zustandsrunden. Erst wenn diese Stufe stabil ist, wird der
 vollstaendige Renderer und danach jede Hardwarefunktion einzeln zugeschaltet.
+
+Verifizierter Stand vom 29.08.2026: 109 Touches ohne Ausfall, 106 angenommene
+und drei zustandsbedingt abgewiesene UI-Ereignisse, stabiler Heap und kein
+Reset in rund elf Minuten. Ein vorheriger 50-Hz-Test mit 213 Touches war
+ebenfalls stabil; die Speaker-Initialisierung hatte keinen Einfluss.

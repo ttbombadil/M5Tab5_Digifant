@@ -1,6 +1,6 @@
 # Touch-/Audio-Probe: Handlungsliste
 
-Stand: 2026-08-28
+Stand: 2026-08-29
 
 Ziel: Die sporadische Touch-Bedienung der `M5Tab5_Audio_Probe` reproduzierbar
 analysieren und stabilisieren. Jede Aktion wird erst nach einem nachvollzieh-
@@ -118,7 +118,7 @@ liefert.
 
 ### A. Reproduzierbare Diagnose
 
-- `[ ]` Zeitstempel und UI-Zustand in jede Touch-/Display-Diagnose aufnehmen.
+- `[x]` Zeitstempel und UI-Zustand in jede Touch-/Display-Diagnose aufnehmen.
 - `[ ]` Vor und nach jedem Display-Refresh Touch-Status erfassen.
 - `[x]` Controller-ACK, ST7123-Statusregister und Koordinatenlieferung trennen.
 - `[x]` Touchfehler ohne Mikrofon reproduzieren: Nach dem ersten Feld-Touch
@@ -129,11 +129,11 @@ liefert.
 
 ### B. Software-Isolation
 
-- `[ ]` M5Unified-Touch ohne direkten M5GFX-Fallback testen.
-- `[ ]` Einen einzigen Touch-Owner für `M5.update()` und `touchPoll()` herstellen.
-- `[ ]` Eigenen Edge-Filter gegen `wasPressed()` vergleichen.
+- `[x]` M5Unified-Touch ohne direkten M5GFX-Fallback testen.
+- `[x]` Einen einzigen Touch-Owner für `M5.update()` und `touchPoll()` herstellen.
+- `[x]` Eigenen Edge-Filter gegen `wasPressed()` vergleichen.
 - `[ ]` Vollbild-Refresh gegen Teilupdate/Sprite-Refresh vergleichen.
-- `[ ]` Touch-Recovery aus dem normalen Anzeigeweg heraushalten.
+- `[x]` Touch-Recovery aus dem normalen Anzeigeweg heraushalten.
 
 ### C. Audio-/Aufnahmepfad
 
@@ -148,9 +148,9 @@ liefert.
 - `[x]` Firmware kompilieren und ohne Upload auf Warnungen/Fehler prüfen.
 - `[x]` Bereits geflashte Firmware mit Boot-/Busdiagnose seriell geprüft;
   ein neuer Diagnoseflash ist erst nach der nächsten Quellcodeänderung nötig.
-- `[!]` Manueller Test: mehrere Feldwechsel ohne Aufnahme.
-- `[!]` Manueller Test: Aufnahme starten und stoppen.
-- `[!]` Manueller Test: Ergebnis, Wiederholung und Feldwechsel.
+- `[x]` Manueller Test: mehrere Feldwechsel ohne Aufnahme.
+- `[x]` Manueller Test: simulierte Aufnahme starten und stoppen.
+- `[x]` Manueller Test: simuliertes Ergebnis, Wiederholung und Feldwechsel.
 - `[ ]` Nur nach bestandenen Gerätetests abschließende Empfehlung geben.
 
 ## Abbruch-/Entscheidungskriterien
@@ -161,6 +161,26 @@ liefert.
 - `TOUCH_RAW` ist vorhanden, aber keine Aktion folgt: Edge-Filter/Hit-Test prüfen.
 - Brownout tritt auf: Erst Versorgung/Audiopfad stabilisieren, danach Touch
   weiter bewerten.
+
+## Verifizierte Touch-only-Baseline vom 29.08.2026
+
+Die Isolation hat zwei voneinander unabhaengige Fehlerbedingungen belegt:
+
+1. Bei einer Touchabfrage etwa alle 5 ms verstummte die physische
+   Touch-Datenquelle nach 51 Ereignissen, waehrend CPU, Heap und serieller
+   Zustandsautomat weiterliefen. Mit einer Begrenzung auf 20 ms wurden in
+   einem A/B-Test 213 Touches ohne Ausfall erkannt.
+2. Ein Flash-/CPU-Reset setzte den separat versorgten ST7123 nicht verlaesslich
+   zurueck. Software meldete dann weiterhin `enabled` und `driver=present`,
+   aber GPIO23 zeigte keine Flanke und es kamen keine Koordinaten. Ein
+   einmaliger Hardwareimpuls ueber TP_RST beim Boot erzeugt nun einen
+   definierten Ausgangszustand.
+
+Die abschliessende Variante ohne Speaker, Mikrofon, SD und Laufzeit-Recovery
+bestand ohne manuellen Reset 109 Touches in rund elf Minuten. Davon wurden 106
+UI-Ereignisse angenommen und drei wegen der aktuellen Zustandszone korrekt
+abgewiesen. Endzustand: Gate frei, GPIO23 High, 278 Interruptflanken,
+Touchcache leer, Heap konstant bei 423688 Byte, kein Brownout und kein Reset.
 
 ## Neuer Befund aus dem letzten Gerätetest
 

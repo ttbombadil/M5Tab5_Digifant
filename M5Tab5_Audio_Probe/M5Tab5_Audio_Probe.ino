@@ -18,6 +18,7 @@ using audio_probe::UiState;
 
 constexpr int16_t kFooterHeight = 54;
 constexpr uint32_t kHeartbeatMs = 5000;
+constexpr uint32_t kTouchPollMs = 20;
 constexpr uint16_t kBackground = TFT_BLACK;
 constexpr uint16_t kInactive = 0x2104;
 constexpr uint16_t kDetail = 0x03EF;
@@ -37,6 +38,10 @@ uint32_t acceptedEvents = 0;
 uint32_t rejectedEvents = 0;
 uint32_t renders = 0;
 uint32_t lastHeartbeat = 0;
+uint32_t lastTouchPoll = 0;
+uint32_t touchPolls = 0;
+uint32_t touchIntTransitions = 0;
+int8_t lastTouchIntLevel = -1;
 char command[32] = {};
 size_t commandLength = 0;
 
@@ -151,13 +156,18 @@ void drawTransition(const UiModel& before) {
 void printStatus(const char* reason) {
   Serial.printf(
       "STATUS reason=%s state=%s selected=%u touch=%lu serial=%lu accepted=%lu "
-      "rejected=%lu renders=%lu uptime_ms=%lu heap=%lu\n",
+      "rejected=%lu renders=%lu polls=%lu gate=%s int23=%d int_edges=%lu "
+      "cached_count=%u uptime_ms=%lu heap=%lu\n",
       reason, audio_probe::stateName(model.state), model.selectedTest + 1,
       static_cast<unsigned long>(physicalTouches),
       static_cast<unsigned long>(serialEvents),
       static_cast<unsigned long>(acceptedEvents),
       static_cast<unsigned long>(rejectedEvents),
-      static_cast<unsigned long>(renders), static_cast<unsigned long>(millis()),
+      static_cast<unsigned long>(renders),
+      static_cast<unsigned long>(touchPolls), touchWasDown ? "down" : "up",
+      digitalRead(23), static_cast<unsigned long>(touchIntTransitions),
+      static_cast<unsigned>(M5.Touch.getCount()),
+      static_cast<unsigned long>(millis()),
       static_cast<unsigned long>(ESP.getFreeHeap()));
 }
 
@@ -182,6 +192,14 @@ void applyEvent(UiEvent event, uint8_t selectedTest, const char* source) {
 }
 
 void pollTouch() {
+  ++touchPolls;
+  const int8_t touchIntLevel = static_cast<int8_t>(digitalRead(23));
+  if (lastTouchIntLevel < 0) lastTouchIntLevel = touchIntLevel;
+  else if (touchIntLevel != lastTouchIntLevel) {
+    ++touchIntTransitions;
+    lastTouchIntLevel = touchIntLevel;
+  }
+
   if (M5.Touch.getCount() == 0) {
     touchWasDown = false;
     return;
@@ -281,6 +299,32 @@ void heartbeat() {
   printStatus("heartbeat");
 }
 
+bool initializeTouchController() {
+  constexpr uint8_t kIoExpanderAddress = 0x43;
+  constexpr uint8_t kOutputRegister = 0x05;
+  constexpr uint8_t kTouchResetBit = 1U << 5;
+
+  // A CPU-/Flash-Reset setzt den separat versorgten ST7123 nicht sicher
+  // zurueck. Deshalb bekommt er bei jedem Programmstart einen definierten
+  // Hardware-Reset, bevor M5Unified erneut an den Displaytreiber bindet.
+  M5.Touch.end();
+  const bool resetLow = M5.In_I2C.bitOff(kIoExpanderAddress, kOutputRegister,
+                                         kTouchResetBit, 100000);
+  M5.delay(20);
+  const bool resetHigh = M5.In_I2C.bitOn(kIoExpanderAddress, kOutputRegister,
+                                         kTouchResetBit, 100000);
+  M5.delay(700);
+
+  const bool driverReady = M5.Display.touch() && M5.Display.touch()->init();
+  M5.Touch.begin(driverReady ? &M5.Display : nullptr);
+  const bool unifiedReady = M5.Touch.isEnabled();
+  Serial.printf("TOUCH_BOOT_RESET low=%s high=%s driver=%s unified=%s\n",
+                resetLow ? "ok" : "failed", resetHigh ? "ok" : "failed",
+                driverReady ? "ready" : "failed",
+                unifiedReady ? "ready" : "failed");
+  return resetLow && resetHigh && driverReady && unifiedReady;
+}
+
 }  // namespace
 
 void setup() {
@@ -291,24 +335,29 @@ void setup() {
   config.clear_display = true;
   config.internal_imu = false;
   M5.begin(config);
-  M5.Touch.begin(M5.Display.touch() ? &M5.Display : nullptr);
+  const bool touchReady = initializeTouchController();
 
   drawAll();
-  Serial.println("AUDIO_PROBE mode=TOUCH_ONLY_BASELINE");
+  Serial.println("AUDIO_PROBE mode=TOUCH_ONLY_50HZ");
   Serial.println("DISABLED speaker microphone sd i2c_diagnostics touch_recovery");
   Serial.printf("TOUCH_READY enabled=%s driver=%s display=%dx%d rotation=%u\n",
                 M5.Touch.isEnabled() ? "yes" : "no",
                 M5.Display.touch() ? "present" : "missing", M5.Display.width(),
                 M5.Display.height(),
                 static_cast<unsigned>(M5.Display.getRotation()));
+  if (!touchReady) Serial.println("TOUCH_ERROR boot_reset_failed");
   printCommands();
   printStatus("boot");
 }
 
 void loop() {
-  M5.update();
-  pollTouch();
+  const uint32_t now = millis();
+  if (now - lastTouchPoll >= kTouchPollMs) {
+    lastTouchPoll = now;
+    M5.update();
+    pollTouch();
+  }
   pollSerial();
   heartbeat();
-  M5.delay(5);
+  M5.delay(1);
 }
