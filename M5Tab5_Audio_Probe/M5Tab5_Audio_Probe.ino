@@ -30,6 +30,7 @@ const char* const kTestNames[audio_probe::kTestCount] = {
     "5/6 Dynamik", "6/6 Abschluss"};
 
 UiModel model;
+bool touchWasDown = false;
 uint32_t physicalTouches = 0;
 uint32_t serialEvents = 0;
 uint32_t acceptedEvents = 0;
@@ -181,9 +182,17 @@ void applyEvent(UiEvent event, uint8_t selectedTest, const char* source) {
 }
 
 void pollTouch() {
-  if (M5.Touch.getCount() == 0) return;
+  if (M5.Touch.getCount() == 0) {
+    touchWasDown = false;
+    return;
+  }
   const auto detail = M5.Touch.getDetail(0);
-  if (!detail.wasPressed()) return;
+  if (!detail.isPressed()) {
+    touchWasDown = false;
+    return;
+  }
+  if (touchWasDown) return;
+  touchWasDown = true;
 
   ++physicalTouches;
   const int16_t height = rowHeight();

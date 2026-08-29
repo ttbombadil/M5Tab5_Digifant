@@ -107,7 +107,8 @@ Status: `[>]` – automatische Abnahme bestanden, physische Abnahme offen
 
 - Nur `M5.begin()`, Display und M5Unified-Touch aktivieren.
 - Lautsprecher, Mikrofon, SD, Busdiagnose und Recovery deaktivieren.
-- Einen einzigen Touch-Leseweg mit `wasPressed()` verwenden.
+- Einen einzigen Touch-Leseweg verwenden. Wie in der nachweislich stabilen
+  Touch-Probe wird die Druckflanke aus `isPressed()` und der Freigabe gebildet.
 - Serielle Ereignisinjektion über denselben `UiEvent`-Pfad führen.
 - Nur notwendige optische Teilaktualisierungen zeichnen.
 
