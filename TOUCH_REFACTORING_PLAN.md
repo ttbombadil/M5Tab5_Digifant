@@ -137,7 +137,14 @@ Abnahme manuell:
 
 ### Schritt 3 – Vollständiger Renderer
 
-Status: `[ ]`
+Status: `[x]` – Renderer und Touch-Watchdog bestanden. Der Renderer bestand 120 serielle Teilupdates, danach lieferte
+der ST7123 nach 58.918 blinden Leerlaufabfragen keine Touchdaten. Der
+Touch-Service wurde auf GPIO23-gesteuertes Lesen umgestellt. Trotzdem fiel der
+ST7123 nach rund 38 Minuten bei exakt null Datenabfragen aus. Aktueller Test:
+Firmware-Liveness alle 5 s; TP_RST nur nach NACK/ungueltiger Antwort. In der
+abschliessenden Abnahme wurden ueber rund 3,65 Stunden 118 Touches erkannt.
+Alle acht Health-Ausfaelle wurden automatisch wiederhergestellt; kein
+CPU-Reset, Brownout, Heapverlust oder dauerhafter Touchausfall trat auf.
 
 - Vollständige statische Sechs-Zeilen-Oberfläche aktivieren.
 - Zustandsabhängige Inhalte und Fortschrittsanzeige ergänzen.

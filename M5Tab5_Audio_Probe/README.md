@@ -4,10 +4,11 @@ Diese Zwischenstufe isoliert die Touchbedienung der Audio-Probe. Sie verwendet
 bereits den vorgesehenen Zustandsautomaten und die Sechs-Zeilen-Oberflaeche,
 fuehrt aber noch keine Audio- oder Speicherfunktion aus.
 
-Bewusst deaktiviert sind Lautsprecher, Mikrofon, SD, direkte I2C-Diagnose,
-zweite Touch-Lesewege und Laufzeit-Recovery. Der separat versorgte ST7123
-erhaelt beim Boot einmal einen definierten TP_RST-Impuls. `M5.update()` und
-damit die Touchabfrage laufen begrenzt auf 50 Hz beziehungsweise alle 20 ms.
+Bewusst deaktiviert sind Lautsprecher, Mikrofon, SD und ein direkter
+Touch-Fallback. Der separat versorgte ST7123 erhaelt beim Boot einmal einen
+definierten TP_RST-Impuls. Koordinaten werden nur bei aktivem GPIO23-Interrupt
+und hoechstens alle 20 ms gelesen. Ein Firmware-Liveness-Check laeuft alle
+fuenf Sekunden; nur nach NACK oder ungueltiger Antwort wird TP_RST ausgeloest.
 
 ## Zustandsfolge
 
@@ -53,3 +54,9 @@ Verifizierter Stand vom 29.08.2026: 109 Touches ohne Ausfall, 106 angenommene
 und drei zustandsbedingt abgewiesene UI-Ereignisse, stabiler Heap und kein
 Reset in rund elf Minuten. Ein vorheriger 50-Hz-Test mit 213 Touches war
 ebenfalls stabil; die Speaker-Initialisierung hatte keinen Einfluss.
+
+Renderer-/Langzeitabnahme: 120 serielle Teil-Redraws ohne Vollbildaufbau nach
+dem Boot sowie 118 physische Touches ueber rund 3,65 Stunden. Acht reale
+Health-Ausfaelle des ST7123 wurden erkannt und automatisch wiederhergestellt.
+Maximale Renderdauer 39,5 ms beim Boot, Teilupdates typischerweise etwa 5 bis
+11 ms; kein CPU-Reset, Brownout oder Heapverlust.

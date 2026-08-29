@@ -6,8 +6,8 @@
 
 #include "ui_state.h"
 
-// Touch-only baseline for isolating the intermittent Tab5 touch failure.
-// Deliberately disabled: speaker, microphone, SD, I2C diagnostics, recovery.
+// Touch-only renderer stage for isolating the intermittent Tab5 touch failure.
+// Deliberately disabled: speaker, microphone, SD and runtime recovery.
 
 namespace {
 
@@ -19,6 +19,8 @@ using audio_probe::UiState;
 constexpr int16_t kFooterHeight = 54;
 constexpr uint32_t kHeartbeatMs = 5000;
 constexpr uint32_t kTouchPollMs = 20;
+constexpr uint32_t kTouchReleaseMs = 30;
+constexpr uint32_t kTouchHealthMs = 5000;
 constexpr uint16_t kBackground = TFT_BLACK;
 constexpr uint16_t kInactive = 0x2104;
 constexpr uint16_t kDetail = 0x03EF;
@@ -27,8 +29,8 @@ constexpr uint16_t kConfirm = 0xB260;
 constexpr uint16_t kResult = 0x4010;
 
 const char* const kTestNames[audio_probe::kTestCount] = {
-    "1/6 Pegel", "2/6 Rauschen", "3/6 Frequenz", "4/6 Kanal",
-    "5/6 Dynamik", "6/6 Abschluss"};
+    "1/6 MOTOR AUS", "2/6 LEERLAUF", "3/6 1000 rpm",
+    "4/6 1500 rpm", "5/6 2000 rpm", "6/6 2500 rpm"};
 
 UiModel model;
 bool touchWasDown = false;
@@ -37,10 +39,19 @@ uint32_t serialEvents = 0;
 uint32_t acceptedEvents = 0;
 uint32_t rejectedEvents = 0;
 uint32_t renders = 0;
+uint32_t lastRenderUs = 0;
+uint32_t maxRenderUs = 0;
 uint32_t lastHeartbeat = 0;
 uint32_t lastTouchPoll = 0;
-uint32_t touchPolls = 0;
+uint32_t touchReads = 0;
+uint32_t touchIdleSkips = 0;
 uint32_t touchIntTransitions = 0;
+uint32_t touchIntHighSince = 0;
+uint32_t lastTouchHealthCheck = 0;
+uint32_t touchHealthChecks = 0;
+uint32_t touchHealthFailures = 0;
+uint32_t touchRecoveries = 0;
+uint8_t lastTouchFirmware = 0;
 int8_t lastTouchIntLevel = -1;
 char command[32] = {};
 size_t commandLength = 0;
@@ -98,8 +109,13 @@ void drawRow(uint8_t row) {
   }
 
   const int16_t zoneWidth = width / 3;
-  M5.Display.drawFastVLine(zoneWidth, top, height - 2, TFT_LIGHTGREY);
-  M5.Display.drawFastVLine(zoneWidth * 2, top, height - 2, TFT_LIGHTGREY);
+  const int16_t titleHeight = height / 3;
+  const int16_t actionTop = top + titleHeight;
+  const int16_t actionHeight = height - titleHeight - 2;
+  drawCentered(kTestNames[row], 0, top, width, titleHeight, 2);
+  M5.Display.drawFastHLine(0, actionTop, width, TFT_LIGHTGREY);
+  M5.Display.drawFastVLine(zoneWidth, actionTop, actionHeight, TFT_LIGHTGREY);
+  M5.Display.drawFastVLine(zoneWidth * 2, actionTop, actionHeight, TFT_LIGHTGREY);
 
   const char* left = "";
   const char* middle = "";
@@ -116,9 +132,10 @@ void drawRow(uint8_t row) {
     case UiState::List:
       break;
   }
-  drawCentered(left, 0, top, zoneWidth, height - 2);
-  drawCentered(middle, zoneWidth, top, zoneWidth, height - 2);
-  drawCentered(right, zoneWidth * 2, top, width - zoneWidth * 2, height - 2);
+  drawCentered(left, 0, actionTop, zoneWidth, actionHeight);
+  drawCentered(middle, zoneWidth, actionTop, zoneWidth, actionHeight);
+  drawCentered(right, zoneWidth * 2, actionTop,
+               width - zoneWidth * 2, actionHeight);
 }
 
 void drawFooter() {
@@ -137,36 +154,62 @@ void drawFooter() {
   drawCentered(line, 0, top, width, kFooterHeight, 2);
 }
 
+void finishRender(uint32_t startedUs, const char* scope) {
+  M5.Display.display();
+  lastRenderUs = micros() - startedUs;
+  if (lastRenderUs > maxRenderUs) maxRenderUs = lastRenderUs;
+  ++renders;
+  Serial.printf("RENDER scope=%s number=%lu duration_us=%lu max_us=%lu\n",
+                scope, static_cast<unsigned long>(renders),
+                static_cast<unsigned long>(lastRenderUs),
+                static_cast<unsigned long>(maxRenderUs));
+}
+
 void drawAll() {
+  const uint32_t startedUs = micros();
   M5.Display.fillScreen(kBackground);
   for (uint8_t row = 0; row < audio_probe::kTestCount; ++row) drawRow(row);
   drawFooter();
-  M5.Display.display();
-  ++renders;
+  finishRender(startedUs, "full_boot");
 }
 
 void drawTransition(const UiModel& before) {
+  const uint32_t startedUs = micros();
   if (before.selectedTest != model.selectedTest) drawRow(before.selectedTest);
   drawRow(model.selectedTest);
   drawFooter();
-  M5.Display.display();
-  ++renders;
+  finishRender(startedUs, before.selectedTest == model.selectedTest
+                              ? "active_row" : "two_rows");
+}
+
+void drawFooterUpdate(const char* scope) {
+  const uint32_t startedUs = micros();
+  drawFooter();
+  finishRender(startedUs, scope);
 }
 
 void printStatus(const char* reason) {
   Serial.printf(
       "STATUS reason=%s state=%s selected=%u touch=%lu serial=%lu accepted=%lu "
-      "rejected=%lu renders=%lu polls=%lu gate=%s int23=%d int_edges=%lu "
-      "cached_count=%u uptime_ms=%lu heap=%lu\n",
+      "rejected=%lu renders=%lu render_last_us=%lu render_max_us=%lu reads=%lu "
+      "idle_skips=%lu gate=%s int23=%d int_edges=%lu cached_count=%u "
+      "health=%lu health_fail=%lu recoveries=%lu fw=0x%02X uptime_ms=%lu heap=%lu\n",
       reason, audio_probe::stateName(model.state), model.selectedTest + 1,
       static_cast<unsigned long>(physicalTouches),
       static_cast<unsigned long>(serialEvents),
       static_cast<unsigned long>(acceptedEvents),
       static_cast<unsigned long>(rejectedEvents),
       static_cast<unsigned long>(renders),
-      static_cast<unsigned long>(touchPolls), touchWasDown ? "down" : "up",
+      static_cast<unsigned long>(lastRenderUs),
+      static_cast<unsigned long>(maxRenderUs),
+      static_cast<unsigned long>(touchReads),
+      static_cast<unsigned long>(touchIdleSkips),
+      touchWasDown ? "down" : "up",
       digitalRead(23), static_cast<unsigned long>(touchIntTransitions),
       static_cast<unsigned>(M5.Touch.getCount()),
+      static_cast<unsigned long>(touchHealthChecks),
+      static_cast<unsigned long>(touchHealthFailures),
+      static_cast<unsigned long>(touchRecoveries), lastTouchFirmware,
       static_cast<unsigned long>(millis()),
       static_cast<unsigned long>(ESP.getFreeHeap()));
 }
@@ -183,23 +226,11 @@ void applyEvent(UiEvent event, uint8_t selectedTest, const char* source) {
                 audio_probe::stateName(model.state), model.selectedTest + 1);
 
   if (result.changed) drawTransition(before);
-  else {
-    drawFooter();
-    M5.Display.display();
-    ++renders;
-  }
+  else drawFooterUpdate("footer_rejected");
   printStatus(source);
 }
 
 void pollTouch() {
-  ++touchPolls;
-  const int8_t touchIntLevel = static_cast<int8_t>(digitalRead(23));
-  if (lastTouchIntLevel < 0) lastTouchIntLevel = touchIntLevel;
-  else if (touchIntLevel != lastTouchIntLevel) {
-    ++touchIntTransitions;
-    lastTouchIntLevel = touchIntLevel;
-  }
-
   if (M5.Touch.getCount() == 0) {
     touchWasDown = false;
     return;
@@ -218,8 +249,7 @@ void pollTouch() {
       detail.y >= contentHeight()) {
     ++rejectedEvents;
     Serial.printf("TOUCH_OUTSIDE x=%d y=%d\n", detail.x, detail.y);
-    drawFooter();
-    M5.Display.display();
+    drawFooterUpdate("footer_outside");
     return;
   }
 
@@ -231,6 +261,38 @@ void pollTouch() {
                 static_cast<unsigned long>(physicalTouches), detail.x, detail.y,
                 row + 1, zone);
   applyEvent(event, row, "touch");
+}
+
+void serviceTouch() {
+  const uint32_t now = millis();
+  const int8_t intLevel = static_cast<int8_t>(digitalRead(23));
+  if (lastTouchIntLevel < 0) {
+    lastTouchIntLevel = intLevel;
+    if (intLevel != 0) touchIntHighSince = now;
+  } else if (intLevel != lastTouchIntLevel) {
+    ++touchIntTransitions;
+    lastTouchIntLevel = intLevel;
+    if (intLevel != 0) touchIntHighSince = now;
+  }
+
+  if (intLevel == 0) {
+    touchIntHighSince = 0;
+    if (now - lastTouchPoll >= kTouchPollMs) {
+      lastTouchPoll = now;
+      ++touchReads;
+      M5.update();
+      pollTouch();
+    }
+    return;
+  }
+
+  ++touchIdleSkips;
+  if (touchWasDown && touchIntHighSince != 0 &&
+      now - touchIntHighSince >= kTouchReleaseMs) {
+    touchWasDown = false;
+    Serial.printf("TOUCH_RELEASE int23=1 reads=%lu\n",
+                  static_cast<unsigned long>(touchReads));
+  }
 }
 
 void printCommands() {
@@ -313,16 +375,54 @@ bool initializeTouchController() {
   M5.delay(20);
   const bool resetHigh = M5.In_I2C.bitOn(kIoExpanderAddress, kOutputRegister,
                                          kTouchResetBit, 100000);
-  M5.delay(700);
+  bool controllerReady = false;
+  for (uint8_t attempt = 0; attempt < 70 && !controllerReady; ++attempt) {
+    M5.delay(10);
+    const uint8_t reg[2] = {0x00, 0x00};
+    uint8_t firmware = 0;
+    controllerReady = m5gfx::i2c::transactionWriteRead(
+        static_cast<int>(M5.In_I2C.getPort()), 0x55, reg, sizeof(reg),
+        &firmware, 1, 100000).has_value() && firmware != 0;
+    if (controllerReady) lastTouchFirmware = firmware;
+  }
 
-  const bool driverReady = M5.Display.touch() && M5.Display.touch()->init();
+  const bool driverReady = controllerReady && M5.Display.touch() &&
+                           M5.Display.touch()->init();
   M5.Touch.begin(driverReady ? &M5.Display : nullptr);
   const bool unifiedReady = M5.Touch.isEnabled();
-  Serial.printf("TOUCH_BOOT_RESET low=%s high=%s driver=%s unified=%s\n",
+  touchWasDown = false;
+  lastTouchIntLevel = static_cast<int8_t>(digitalRead(23));
+  touchIntHighSince = lastTouchIntLevel == 0 ? 0 : millis();
+  Serial.printf("TOUCH_RESET low=%s high=%s controller=%s fw=0x%02X driver=%s unified=%s\n",
                 resetLow ? "ok" : "failed", resetHigh ? "ok" : "failed",
+                controllerReady ? "ready" : "failed", lastTouchFirmware,
                 driverReady ? "ready" : "failed",
                 unifiedReady ? "ready" : "failed");
-  return resetLow && resetHigh && driverReady && unifiedReady;
+  return resetLow && resetHigh && controllerReady && driverReady && unifiedReady;
+}
+
+bool readTouchFirmware() {
+  const uint8_t reg[2] = {0x00, 0x00};
+  uint8_t firmware = 0;
+  const bool ready = m5gfx::i2c::transactionWriteRead(
+      static_cast<int>(M5.In_I2C.getPort()), 0x55, reg, sizeof(reg),
+      &firmware, 1, 100000).has_value() && firmware != 0;
+  lastTouchFirmware = ready ? firmware : 0;
+  return ready;
+}
+
+void serviceTouchHealth() {
+  const uint32_t now = millis();
+  if (now - lastTouchHealthCheck < kTouchHealthMs || touchWasDown ||
+      digitalRead(23) == 0) return;
+  lastTouchHealthCheck = now;
+  ++touchHealthChecks;
+  if (readTouchFirmware()) return;
+
+  ++touchHealthFailures;
+  Serial.printf("TOUCH_HEALTH result=failed check=%lu action=reset\n",
+                static_cast<unsigned long>(touchHealthChecks));
+  if (initializeTouchController()) ++touchRecoveries;
 }
 
 }  // namespace
@@ -338,8 +438,9 @@ void setup() {
   const bool touchReady = initializeTouchController();
 
   drawAll();
-  Serial.println("AUDIO_PROBE mode=TOUCH_ONLY_50HZ");
-  Serial.println("DISABLED speaker microphone sd i2c_diagnostics touch_recovery");
+  Serial.println("AUDIO_PROBE mode=TOUCH_RENDERER_50HZ");
+  Serial.println("DISABLED speaker microphone sd direct_touch_fallback");
+  Serial.println("TOUCH_POLICY irq_reads health_5s reset_on_failed_health");
   Serial.printf("TOUCH_READY enabled=%s driver=%s display=%dx%d rotation=%u\n",
                 M5.Touch.isEnabled() ? "yes" : "no",
                 M5.Display.touch() ? "present" : "missing", M5.Display.width(),
@@ -351,12 +452,8 @@ void setup() {
 }
 
 void loop() {
-  const uint32_t now = millis();
-  if (now - lastTouchPoll >= kTouchPollMs) {
-    lastTouchPoll = now;
-    M5.update();
-    pollTouch();
-  }
+  serviceTouch();
+  serviceTouchHealth();
   pollSerial();
   heartbeat();
   M5.delay(1);

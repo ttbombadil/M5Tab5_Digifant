@@ -176,11 +176,25 @@ Die Isolation hat zwei voneinander unabhaengige Fehlerbedingungen belegt:
    einmaliger Hardwareimpuls ueber TP_RST beim Boot erzeugt nun einen
    definierten Ausgangszustand.
 
-Die abschliessende Variante ohne Speaker, Mikrofon, SD und Laufzeit-Recovery
+Die damalige Kurzzeit-Baseline ohne Speaker, Mikrofon, SD und Laufzeit-Recovery
 bestand ohne manuellen Reset 109 Touches in rund elf Minuten. Davon wurden 106
 UI-Ereignisse angenommen und drei wegen der aktuellen Zustandszone korrekt
 abgewiesen. Endzustand: Gate frei, GPIO23 High, 278 Interruptflanken,
 Touchcache leer, Heap konstant bei 423688 Byte, kein Brownout und kein Reset.
+
+### Renderer- und Langzeitabnahme
+
+Ein weitergehender Leerlauftest zeigte, dass der ST7123 auch ohne
+Koordinaten-Polling nach laengerer Zeit NACK liefern kann. Der finale
+Touch-Service liest Koordinaten deshalb nur bei GPIO23 Low, prueft jedoch alle
+fuenf Sekunden das Firmware-Register. TP_RST wird ausschliesslich nach NACK
+oder ungueltiger Firmwareantwort ausgeloest.
+
+Dieser Stand bestand 120 serielle Renderer-Teilupdates und anschliessend 118
+physische Touches ueber rund 3,65 Stunden. Acht Controllerausfaelle wurden vom
+Healthcheck erkannt und vollstaendig wiederhergestellt. Endwerte: 2631
+Healthchecks, 1046 Interruptflanken, Heap 423640 Byte, maximal 39,5 ms fuer den
+Boot-Vollaufbau, kein CPU-Reset und kein Brownout.
 
 ## Neuer Befund aus dem letzten Gerätetest
 
