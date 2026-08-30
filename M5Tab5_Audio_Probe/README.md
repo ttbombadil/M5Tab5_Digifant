@@ -87,3 +87,13 @@ abgeschlossen, drei laufende Bloecke durch Touch-Stop sauber verworfen. Alle
 ST7123-NACK oder Speicherverlust trat in der finalen Abnahme auf. Ein zuvor
 beobachteter spontaner ST7123-Ausfall wurde ohne CPU-Reset wiederhergestellt;
 die Liveness-Pruefung wurde danach von fuenf auf zwei Sekunden verkuerzt.
+
+Vollaufnahme und Auswertung vom 30.08.2026: Bis zu 120 Bloecke beziehungsweise
+30 Sekunden werden in den vorab reservierten PCM-Puffer kopiert. Min/Max,
+Peak, RMS-Summe, DC, Near-Full-Scale und Clipping werden inkrementell
+berechnet. Die Pegelreserve-Warnung haengt ausschliesslich von
+Near-Full-Scale-/Clippingdaten ab. Ein ruhiger 30-s-Test lieferte 480.000
+Frames bei 15.811,6 Hz und `level_warning=no`. Ein physischer Touch-Stop nach
+20,25 Sekunden lieferte 324.000 Frames bei 15.813,5 Hz, RMS 51/58, null
+Near-Full-Scale-Samples und null Clippingereignisse. Auch nach langer
+Wartezeit blieben Stop-Bestaetigung und weitere Touchbedienung erreichbar.

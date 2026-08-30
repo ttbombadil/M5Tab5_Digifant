@@ -1,6 +1,8 @@
 #include <M5Unified.h>
 #include <esp_heap_caps.h>
 
+#include <climits>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -24,10 +26,12 @@ constexpr uint32_t kTouchPollMs = 20;
 constexpr uint32_t kTouchReleaseMs = 30;
 constexpr uint32_t kTouchHealthMs = 2000;
 constexpr uint32_t kSampleRate = 16000;
+constexpr uint32_t kMinCaptureSeconds = 20;
 constexpr uint32_t kMaxCaptureSeconds = 30;
 constexpr uint32_t kChunkFrames = kSampleRate / 4;  // 250 ms
-constexpr uint8_t kShortCaptureBlocks = 4;          // 1 s maximum
 constexpr uint32_t kMaxFrames = kSampleRate * kMaxCaptureSeconds;
+constexpr uint32_t kMinFrames = kSampleRate * kMinCaptureSeconds;
+constexpr int16_t kNearFullScale = 32752;
 constexpr size_t kPcmSamples = static_cast<size_t>(kMaxFrames) * 2U;
 constexpr size_t kChunkSamples = static_cast<size_t>(kChunkFrames) * 2U;
 static_assert(kPcmSamples * sizeof(int16_t) == 1920000,
@@ -82,13 +86,52 @@ struct AudioPreparation {
   uint32_t abortedBlocks = 0;
   uint32_t completedCaptures = 0;
   uint32_t currentFrames = 0;
-  uint8_t currentBlocks = 0;
+  uint32_t currentBlocks = 0;
+  uint64_t captureAudioUs = 0;
+  uint32_t blockStartedUs = 0;
+  uint32_t lastDisplayedSecond = UINT32_MAX;
   bool blockPending = false;
 
   bool buffersReady() const { return pcm != nullptr && chunk != nullptr; }
 };
 
 AudioPreparation audio;
+
+struct ChannelStats {
+  int16_t minimum = INT16_MAX;
+  int16_t maximum = INT16_MIN;
+  int64_t sum = 0;
+  uint64_t squares = 0;
+  uint32_t nearFullScale = 0;
+  uint32_t clippingEvents = 0;
+  bool previousClipped = false;
+};
+
+struct CaptureResult {
+  bool available = false;
+  bool durationValid = false;
+  bool levelWarning = false;
+  uint32_t frames = 0;
+  uint64_t audioUs = 0;
+  ChannelStats channels[2];
+};
+
+ChannelStats captureChannels[2];
+CaptureResult captureResults[audio_probe::kTestCount];
+
+void collectSample(ChannelStats& stats, int16_t value) {
+  if (value < stats.minimum) stats.minimum = value;
+  if (value > stats.maximum) stats.maximum = value;
+  stats.sum += value;
+  const int64_t wide = value;
+  stats.squares += static_cast<uint64_t>(wide * wide);
+  const bool clipped = value <= -kNearFullScale || value >= kNearFullScale;
+  if (clipped) {
+    ++stats.nearFullScale;
+    if (!stats.previousClipped) ++stats.clippingEvents;
+  }
+  stats.previousClipped = clipped;
+}
 
 bool prepareAudioWithoutStartingMicrophone() {
   auto mic = M5.Mic.config();
@@ -125,7 +168,7 @@ const char* effectName(EffectRequest effect) {
   return "UNKNOWN";
 }
 
-void runEffect(EffectRequest effect) {
+void runEffect(EffectRequest effect, bool resumeCapture = false) {
   if (effect == EffectRequest::None) return;
 
   const uint32_t startedUs = micros();
@@ -141,11 +184,17 @@ void runEffect(EffectRequest effect) {
   if (effect == EffectRequest::StartMicrophone) {
     ++audio.startAttempts;
     success = M5.Mic.begin();
-    if (success) {
+    if (success && !resumeCapture) {
       ++audio.startSuccesses;
       audio.currentFrames = 0;
       audio.currentBlocks = 0;
+      audio.captureAudioUs = 0;
+      audio.lastDisplayedSecond = UINT32_MAX;
       audio.blockPending = false;
+      captureChannels[0] = ChannelStats{};
+      captureChannels[1] = ChannelStats{};
+    } else if (success) {
+      ++audio.startSuccesses;
     }
   } else {
     ++audio.stopRequests;
@@ -222,7 +271,29 @@ void drawRow(uint8_t row) {
   const int16_t titleHeight = height / 3;
   const int16_t actionTop = top + titleHeight;
   const int16_t actionHeight = height - titleHeight - 2;
-  drawCentered(kTestNames[row], 0, top, width, titleHeight, 2);
+  char activeTitle[128];
+  const char* title = kTestNames[row];
+  if (model.state == UiState::Capturing) {
+    std::snprintf(activeTitle, sizeof(activeTitle), "%s | %lu / %lu s",
+                  kTestNames[row],
+                  static_cast<unsigned long>(audio.currentFrames / kSampleRate),
+                  static_cast<unsigned long>(kMaxCaptureSeconds));
+    title = activeTitle;
+  } else if (model.state == UiState::Result && captureResults[row].available) {
+    const CaptureResult& result = captureResults[row];
+    const double rms0 = result.frames
+        ? std::sqrt(static_cast<double>(result.channels[0].squares) / result.frames)
+        : 0.0;
+    const double rms1 = result.frames
+        ? std::sqrt(static_cast<double>(result.channels[1].squares) / result.frames)
+        : 0.0;
+    std::snprintf(activeTitle, sizeof(activeTitle), "%s | RMS %.0f / %.0f | %s",
+                  kTestNames[row], rms0, rms1,
+                  result.levelWarning ? "PEGELRESERVE" :
+                  result.durationValid ? "OK" : "ZU KURZ");
+    title = activeTitle;
+  }
+  drawCentered(title, 0, top, width, titleHeight, 2);
   M5.Display.drawFastHLine(0, actionTop, width, TFT_LIGHTGREY);
   M5.Display.drawFastVLine(zoneWidth, actionTop, actionHeight, TFT_LIGHTGREY);
   M5.Display.drawFastVLine(zoneWidth * 2, actionTop, actionHeight, TFT_LIGHTGREY);
@@ -340,6 +411,48 @@ void printStatus(const char* reason) {
       static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)));
 }
 
+void finalizeCaptureResult() {
+  CaptureResult& result = captureResults[model.selectedTest];
+  result.available = true;
+  result.frames = audio.currentFrames;
+  result.audioUs = audio.captureAudioUs;
+  result.channels[0] = captureChannels[0];
+  result.channels[1] = captureChannels[1];
+  if (result.frames == 0) {
+    result.channels[0].minimum = result.channels[0].maximum = 0;
+    result.channels[1].minimum = result.channels[1].maximum = 0;
+  }
+  result.durationValid = result.frames >= kMinFrames;
+  result.levelWarning = result.channels[0].nearFullScale != 0 ||
+                        result.channels[1].nearFullScale != 0;
+
+  const double effectiveRate = result.audioUs
+      ? 1000000.0 * result.frames / result.audioUs : 0.0;
+  Serial.printf(
+      "AUDIO_RESULT test=%u frames=%lu duration_s=%.3f effective_rate=%.2f "
+      "duration_valid=%s level_warning=%s\n",
+      static_cast<unsigned>(model.selectedTest + 1),
+      static_cast<unsigned long>(result.frames), result.audioUs / 1000000.0,
+      effectiveRate, result.durationValid ? "yes" : "no",
+      result.levelWarning ? "yes" : "no");
+  for (uint8_t channel = 0; channel < 2; ++channel) {
+    const ChannelStats& stats = result.channels[channel];
+    const double rms = result.frames
+        ? std::sqrt(static_cast<double>(stats.squares) / result.frames) : 0.0;
+    const double dc = result.frames
+        ? static_cast<double>(stats.sum) / result.frames : 0.0;
+    const int32_t negativePeak = -static_cast<int32_t>(stats.minimum);
+    const int32_t peak = negativePeak > stats.maximum ? negativePeak : stats.maximum;
+    Serial.printf(
+        "AUDIO_CHANNEL channel=%u min=%d max=%d peak=%ld rms=%.2f dc=%.2f "
+        "near_full=%lu clipping_events=%lu\n",
+        static_cast<unsigned>(channel), stats.minimum, stats.maximum,
+        static_cast<long>(peak), rms, dc,
+        static_cast<unsigned long>(stats.nearFullScale),
+        static_cast<unsigned long>(stats.clippingEvents));
+  }
+}
+
 void applyEvent(UiEvent event, uint8_t selectedTest, const char* source) {
   const UiModel before = model;
   const TransitionResult result = audio_probe::dispatch(model, event, selectedTest);
@@ -351,7 +464,12 @@ void applyEvent(UiEvent event, uint8_t selectedTest, const char* source) {
                 audio_probe::stateName(before.state),
                 audio_probe::stateName(model.state), model.selectedTest + 1);
 
-  runEffect(audio_probe::effectForTransition(before, model));
+  const bool resumeCapture = before.state == UiState::StopConfirm &&
+                             model.state == UiState::Capturing;
+  runEffect(audio_probe::effectForTransition(before, model), resumeCapture);
+  if (before.state != UiState::Result && model.state == UiState::Result) {
+    finalizeCaptureResult();
+  }
 
   if (result.changed) drawTransition(before);
   else drawFooterUpdate("footer_rejected");
@@ -371,6 +489,14 @@ void serviceAudioCapture() {
   if (audio.blockPending) {
     if (M5.Mic.isRecording()) return;
     audio.blockPending = false;
+    audio.captureAudioUs += micros() - audio.blockStartedUs;
+    const size_t sampleOffset = static_cast<size_t>(audio.currentFrames) * 2U;
+    std::memcpy(audio.pcm + sampleOffset, audio.chunk,
+                kChunkSamples * sizeof(int16_t));
+    for (uint32_t frame = 0; frame < kChunkFrames; ++frame) {
+      collectSample(captureChannels[0], audio.chunk[frame * 2U]);
+      collectSample(captureChannels[1], audio.chunk[frame * 2U + 1U]);
+    }
     ++audio.blockCompletions;
     ++audio.currentBlocks;
     audio.currentFrames += kChunkFrames;
@@ -381,7 +507,16 @@ void serviceAudioCapture() {
         static_cast<unsigned long>(audio.blockCompletions),
         static_cast<unsigned long>(audio.currentFrames));
 
-    if (audio.currentBlocks >= kShortCaptureBlocks) {
+    const uint32_t displayedSecond = audio.currentFrames / kSampleRate;
+    if (displayedSecond != audio.lastDisplayedSecond) {
+      audio.lastDisplayedSecond = displayedSecond;
+      const uint32_t renderStarted = micros();
+      drawRow(model.selectedTest);
+      drawFooter();
+      finishRender(renderStarted, "capture_progress");
+    }
+
+    if (audio.currentFrames >= kMaxFrames) {
       ++audio.completedCaptures;
       applyEvent(UiEvent::CompleteCapture, model.selectedTest, "audio_complete");
       return;
@@ -397,6 +532,7 @@ void serviceAudioCapture() {
     return;
   }
   audio.blockPending = true;
+  audio.blockStartedUs = micros();
   Serial.printf("AUDIO_BLOCK result=requested capture_block=%u request=%lu\n",
                 static_cast<unsigned>(audio.currentBlocks + 1),
                 static_cast<unsigned long>(audio.blockRequests));
@@ -616,8 +752,8 @@ void setup() {
   const bool audioReady = prepareAudioWithoutStartingMicrophone();
 
   drawAll();
-  Serial.println("AUDIO_PROBE mode=SHORT_BLOCK_RECORDING");
-  Serial.println("DISABLED speaker long_capture analysis sd direct_touch_fallback");
+  Serial.println("AUDIO_PROBE mode=FULL_CAPTURE_AND_ANALYSIS");
+  Serial.println("DISABLED speaker sd direct_touch_fallback");
   Serial.println("TOUCH_POLICY irq_reads health_2s reset_on_failed_health");
   Serial.printf("TOUCH_READY enabled=%s driver=%s display=%dx%d rotation=%u\n",
                 M5.Touch.isEnabled() ? "yes" : "no",

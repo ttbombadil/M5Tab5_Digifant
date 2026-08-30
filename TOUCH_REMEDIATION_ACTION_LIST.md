@@ -239,6 +239,23 @@ Versuch nach einer abgeschlossenen Aufnahme beobachteter, eigenstaendiger
 ST7123-NACK wurde korrekt wiederhergestellt; um den wahrgenommenen Stillstand
 zu begrenzen, prueft der Watchdog nun alle zwei statt alle fuenf Sekunden.
 
+### Vollaufnahme und Pegelauswertung
+
+Die volle Aufnahme verwendet weiterhin denselben nichtblockierenden
+250-ms-Service und schreibt jeden abgeschlossenen Block in den vorab
+reservierten 30-s-PCM-Puffer. Pegelstatistiken werden beim Kopieren
+inkrementell gebildet; nach Aufnahmeende entsteht dadurch keine lange
+Auswertungspause. Zu kurze Dauer und geringe Lautstaerke sind getrennte
+Ergebnisse. `PEGELRESERVE` wird nur bei Near-Full-Scale- oder Clippingdaten
+gesetzt.
+
+Der automatische ruhige 30-s-Test erreichte 480.000 Frames, 15.811,6 Hz
+effektive Rate, RMS 43/44 und null Clipping bei `level_warning=no`. Der
+physische Test wurde nach 324.000 Frames beziehungsweise 20,25 s per Touch
+gestoppt und bestaetigt. Ergebnis: 15.813,5 Hz, RMS 51/58, keine
+Near-Full-Scale-Samples, keine Clippingereignisse und keine Pegelwarnung.
+Touch blieb auch nach langer Wartezeit ohne CPU-Reset bedienbar.
+
 ## Neuer Befund aus dem letzten Gerätetest
 
 Der Fehler tritt bereits beim ersten Wechsel von `LIST` nach `DETAIL` auf,

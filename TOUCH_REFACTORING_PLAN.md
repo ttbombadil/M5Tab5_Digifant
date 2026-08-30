@@ -215,7 +215,15 @@ Abnahme:
 
 ### Schritt 7 – Vollständige 20–30-s-Aufnahme und Auswertung
 
-Status: `[ ]`
+Status: `[x]` – Vollaufnahme und inkrementelle Auswertung bestanden. PCM wird
+in 250-ms-Bloecken in den 30-s-Zielpuffer kopiert; Min/Max, RMS-Summe, DC,
+Near-Full-Scale und Clipping werden dabei fortlaufend aktualisiert. Eine
+Pegelreserve-Warnung entsteht nur aus Near-Full-Scale-/Clippingdaten, nicht
+aus geringer Lautstaerke oder kurzer Dauer. Der automatische 30-s-Test
+erreichte 480.000 Frames bei 15.811,6 Hz ohne Pegelwarnung. Der physische
+Touch-Stop erreichte 324.000 Frames beziehungsweise 20,25 s bei 15.813,5 Hz,
+RMS 51/58 und null Clipping-/Near-Full-Scale-Ereignissen. Stop-Bestaetigung,
+Wiederholen und Testwechsel blieben erreichbar; kein CPU-Reset trat auf.
 
 - vollständige Aufnahmedauer aktivieren.
 - RMS, Peak, Min/Max, DC, Clipping und effektive Samplerate auswerten.
