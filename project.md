@@ -388,7 +388,31 @@ Der Logger ist explizit darauf ausgelegt, genau dieses Verhalten im realen Fahrz
 - `wbh-diag`, `monoscan`
 - NefMoto-Forum / Reverse-Engineering-Community
 
-## 11. TODO-Liste
+## 11. Status und verbleibende Arbeiten
+
+Die folgende historische P0–P4-Liste dokumentiert den ursprünglichen
+Implementierungsplan. Der aktuelle funktionale Analyzer-Stand einschließlich
+ECU-/IMU-/SD-Logging ist in `M5Tab5_Digifant_Analyzer/verification.md`
+dokumentiert. Die Audio-/Touch-Abnahme steht in
+`M5Tab5_Audio_Probe/README.md` und `TOUCH_REMEDIATION_ACTION_LIST.md`.
+
+Aktuelle fachliche Restarbeiten:
+
+- Schubabschaltungs-/Leerlaufstatus durch kontrollierte Fahrzeugzustände
+  verifizieren.
+- Unbekannte oder nur inferierte Rawwertformeln anhand weiterer Messungen
+  absichern; siehe `DIGIFANT_MEASUREMENT_SEMANTICS.md`.
+- Sichere Testfahrt durchführen und G69, Drehzahl und Fahrzustand mit dem
+  beobachteten Sprotzverhalten korrelieren.
+- R7/den nicht reproduzierten Target-Hänger mit vollständigem Panic-Backtrace
+  und Owner-Diagnose weiter untersuchen.
+- Den Motor-Audio-Proof am geplanten Montageort durchführen; siehe
+  `M5Tab5_Audio_Probe/HARDWARE_PROOF.md`.
+
+Optionale Erweiterungen wie WLAN-/USB-Export werden erst nach Abschluss der
+fachlichen Messkampagne bewertet.
+
+### Historischer Implementierungsplan
 
 ### P0 – Blocker / Grundvoraussetzungen
 

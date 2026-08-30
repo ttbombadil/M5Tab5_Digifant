@@ -30,7 +30,7 @@ std::vector<uint8_t> parseHexField(const std::string& field) {
 }  // namespace
 
 int main() {
-  std::ifstream capture("M5Tab5_Digifant_Analyzer/captures/engine_running_corrected_replay.csv");
+  std::ifstream capture("captures/engine_running_corrected_replay.csv");
   assert(capture.good());
 
   std::string line;

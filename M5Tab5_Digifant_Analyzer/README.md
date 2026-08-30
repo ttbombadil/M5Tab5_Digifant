@@ -55,6 +55,11 @@ Provenienz. Konvertierung:
 
 ## Tests und maßgebliche Dokumente
 
+Vom Repository-Root aus bündelt `./tools/run_checks.sh` die verfügbaren
+Hosttests, Architektur-/Loggerguards und den Touch-Probe-Compile. Einzelne
+Analyzer-Tests und Builds können weiterhin wie unten beschrieben ausgeführt
+werden.
+
 Die C++-Hosttests liegen in `tests/`; der DLOG-Test läuft mit
 `python3 tests/dlog_v2_test.py`. Architektur- und Loggerguards liegen in
 `tools/`; Host-/Sanitizer-/Targettests und reale ECU-/IMU-/SD-Abnahmen sind in

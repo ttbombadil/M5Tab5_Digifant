@@ -657,7 +657,8 @@ unverändert aus der Referenz übernommen. Beide Dateien sind byteidentisch:
 ```text
 Zeilen: 109 (Header plus 108 Datenframes)
 SHA-256: 5421eda8655b648e7f706f80d63e07cb774b1ba6d2baeb058dddb44984a16cb0
-cmp captures/engine_running_corrected_replay.csv M5Tab5_Digifant_Analyzer/captures/engine_running_corrected_replay.csv: PASS
+Die Golden-Capture liegt zentral unter `captures/engine_running_corrected_replay.csv`.
+Der Hosttest verwendet diese eine Quelle direkt: PASS.
 ```
 
 Der gezielte RED-Test `digifant_groups_golden_test.cpp` schlug vor der

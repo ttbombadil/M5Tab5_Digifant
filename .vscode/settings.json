@@ -1,12 +1,8 @@
 {
     "files.exclude": {
-        "build": true,
-        ".vscode": true,
-        "build_usb_check": true,
-        "tools": true,
+        "build*": true,
         ".venv": true,
-        "build_hw": true,
-        "build_sim": true,
-        ".gitignore": true
+        "**/__pycache__": true,
+        "**/*.pyc": true
     }
 }

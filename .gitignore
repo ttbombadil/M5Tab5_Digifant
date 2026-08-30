@@ -3,3 +3,8 @@ build*
 .DS_Store
 __pycache__/
 *.pyc
+*.elf
+*.map
+*.bin
+*.o
+*.a
