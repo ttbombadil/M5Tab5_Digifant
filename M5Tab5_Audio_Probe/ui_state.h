@@ -8,9 +8,12 @@ constexpr uint8_t kTestCount = 6;
 
 enum class UiState : uint8_t { List, Detail, Capturing, StopConfirm, Result };
 enum class UiEvent : uint8_t {
-  None, SelectTest, Activate, Stop, Resume, ConfirmStop, CompleteCapture, Repeat, Back
+  None, SelectTest, Activate, Stop, Resume, ConfirmStop, CompleteCapture,
+  Repeat, Back, WriteWav
 };
-enum class EffectRequest : uint8_t { None, StartMicrophone, StopMicrophone };
+enum class EffectRequest : uint8_t {
+  None, StartMicrophone, StopMicrophone, WriteWav
+};
 
 struct UiModel {
   UiState state = UiState::List;
@@ -66,10 +69,18 @@ inline TransitionResult dispatch(UiModel& model, UiEvent event, uint8_t selected
         accepted = true;
       }
       break;
+    case UiEvent::WriteWav:
+      accepted = model.state == UiState::Result;
+      break;
     case UiEvent::None:
       break;
   }
   return {accepted, before.state != model.state || before.selectedTest != model.selectedTest};
+}
+
+inline EffectRequest effectForEvent(UiEvent event, const UiModel& model) {
+  return event == UiEvent::WriteWav && model.state == UiState::Result
+             ? EffectRequest::WriteWav : EffectRequest::None;
 }
 
 inline EffectRequest effectForTransition(const UiModel& before,
@@ -94,7 +105,9 @@ inline UiEvent eventForTap(const UiModel& model, uint8_t row, uint8_t zone) {
     case UiState::Detail: return zone == 0 ? UiEvent::Back : UiEvent::Activate;
     case UiState::Capturing: return UiEvent::Stop;
     case UiState::StopConfirm: return zone == 0 ? UiEvent::Resume : UiEvent::ConfirmStop;
-    case UiState::Result: return zone == 1 ? UiEvent::Repeat : UiEvent::Back;
+    case UiState::Result:
+      return zone == 0 ? UiEvent::Back
+                       : zone == 1 ? UiEvent::Repeat : UiEvent::WriteWav;
     case UiState::List: return UiEvent::SelectTest;
   }
   return UiEvent::None;

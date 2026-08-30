@@ -1,4 +1,6 @@
 #include <M5Unified.h>
+#include <FS.h>
+#include <SD_MMC.h>
 #include <esp_heap_caps.h>
 
 #include <climits>
@@ -32,6 +34,7 @@ constexpr uint32_t kChunkFrames = kSampleRate / 4;  // 250 ms
 constexpr uint32_t kMaxFrames = kSampleRate * kMaxCaptureSeconds;
 constexpr uint32_t kMinFrames = kSampleRate * kMinCaptureSeconds;
 constexpr int16_t kNearFullScale = 32752;
+constexpr size_t kStorageChunkBytes = 16384;
 constexpr size_t kPcmSamples = static_cast<size_t>(kMaxFrames) * 2U;
 constexpr size_t kChunkSamples = static_cast<size_t>(kChunkFrames) * 2U;
 static_assert(kPcmSamples * sizeof(int16_t) == 1920000,
@@ -119,6 +122,28 @@ struct CaptureResult {
 ChannelStats captureChannels[2];
 CaptureResult captureResults[audio_probe::kTestCount];
 
+enum class StorageState : uint8_t {
+  Idle,
+  Requested,
+  Data,
+  Verify,
+  Complete,
+  Failed
+};
+
+struct StorageService {
+  StorageState state = StorageState::Idle;
+  File file;
+  size_t dataBytes = 0;
+  size_t writtenBytes = 0;
+  uint32_t requests = 0;
+  uint32_t successes = 0;
+  uint32_t failures = 0;
+};
+
+StorageService storage;
+int8_t pcmTest = -1;
+
 void collectSample(ChannelStats& stats, int16_t value) {
   if (value < stats.minimum) stats.minimum = value;
   if (value > stats.maximum) stats.maximum = value;
@@ -163,6 +188,7 @@ const char* effectName(EffectRequest effect) {
   switch (effect) {
     case EffectRequest::StartMicrophone: return "MIC_START";
     case EffectRequest::StopMicrophone: return "MIC_STOP";
+    case EffectRequest::WriteWav: return "WRITE_WAV";
     case EffectRequest::None: return "NONE";
   }
   return "UNKNOWN";
@@ -191,17 +217,30 @@ void runEffect(EffectRequest effect, bool resumeCapture = false) {
       audio.captureAudioUs = 0;
       audio.lastDisplayedSecond = UINT32_MAX;
       audio.blockPending = false;
+      pcmTest = -1;
+      if (storage.state == StorageState::Complete ||
+          storage.state == StorageState::Failed) {
+        storage.state = StorageState::Idle;
+      }
       captureChannels[0] = ChannelStats{};
       captureChannels[1] = ChannelStats{};
     } else if (success) {
       ++audio.startSuccesses;
     }
-  } else {
+  } else if (effect == EffectRequest::StopMicrophone) {
     ++audio.stopRequests;
     if (audio.blockPending) ++audio.abortedBlocks;
     M5.Mic.end();
     audio.blockPending = false;
     success = !M5.Mic.isRunning();
+  } else if (effect == EffectRequest::WriteWav) {
+    success = storage.state == StorageState::Idle ||
+              storage.state == StorageState::Complete ||
+              storage.state == StorageState::Failed;
+    if (success) {
+      storage.state = StorageState::Requested;
+      ++storage.requests;
+    }
   }
 
   Serial.printf(
@@ -228,6 +267,7 @@ const char* eventName(UiEvent event) {
     case UiEvent::CompleteCapture: return "COMPLETE_CAPTURE";
     case UiEvent::Repeat: return "REPEAT";
     case UiEvent::Back: return "BACK";
+    case UiEvent::WriteWav: return "WRITE_WAV";
     case UiEvent::None: return "NONE";
   }
   return "UNKNOWN";
@@ -287,10 +327,11 @@ void drawRow(uint8_t row) {
     const double rms1 = result.frames
         ? std::sqrt(static_cast<double>(result.channels[1].squares) / result.frames)
         : 0.0;
+    const char* resultStatus = result.levelWarning ? "PEGELRESERVE" :
+                               result.durationValid ? "OK" : "ZU KURZ";
     std::snprintf(activeTitle, sizeof(activeTitle), "%s | RMS %.0f / %.0f | %s",
                   kTestNames[row], rms0, rms1,
-                  result.levelWarning ? "PEGELRESERVE" :
-                  result.durationValid ? "OK" : "ZU KURZ");
+                  resultStatus);
     title = activeTitle;
   }
   drawCentered(title, 0, top, width, titleHeight, 2);
@@ -309,7 +350,17 @@ void drawRow(uint8_t row) {
     case UiState::StopConfirm:
       left = "WEITER"; middle = right = "STOP OK"; break;
     case UiState::Result:
-      left = "LISTE"; middle = "WIEDERHOLEN"; right = "LISTE"; break;
+      left = "LISTE";
+      middle = "WIEDERHOLEN";
+      right = storage.state == StorageState::Requested ||
+                      storage.state == StorageState::Data ||
+                      storage.state == StorageState::Verify
+                  ? "SCHREIBT..."
+                  : storage.state == StorageState::Complete
+                        ? "WAV OK"
+                        : storage.state == StorageState::Failed
+                              ? "SD FEHLER" : "WAV";
+      break;
     case UiState::List:
       break;
   }
@@ -409,6 +460,15 @@ void printStatus(const char* reason) {
       static_cast<unsigned long>(audio.completedCaptures),
       static_cast<unsigned long>(audio.currentFrames),
       static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)));
+  Serial.printf(
+      "STORAGE_STATUS state=%u requests=%lu successes=%lu failures=%lu "
+      "written=%u/%u\n",
+      static_cast<unsigned>(storage.state),
+      static_cast<unsigned long>(storage.requests),
+      static_cast<unsigned long>(storage.successes),
+      static_cast<unsigned long>(storage.failures),
+      static_cast<unsigned>(storage.writtenBytes),
+      static_cast<unsigned>(storage.dataBytes));
 }
 
 void finalizeCaptureResult() {
@@ -418,6 +478,7 @@ void finalizeCaptureResult() {
   result.audioUs = audio.captureAudioUs;
   result.channels[0] = captureChannels[0];
   result.channels[1] = captureChannels[1];
+  pcmTest = static_cast<int8_t>(model.selectedTest);
   if (result.frames == 0) {
     result.channels[0].minimum = result.channels[0].maximum = 0;
     result.channels[1].minimum = result.channels[1].maximum = 0;
@@ -454,6 +515,15 @@ void finalizeCaptureResult() {
 }
 
 void applyEvent(UiEvent event, uint8_t selectedTest, const char* source) {
+  if (event == UiEvent::Activate &&
+      (storage.state == StorageState::Requested ||
+       storage.state == StorageState::Data ||
+       storage.state == StorageState::Verify)) {
+    ++rejectedEvents;
+    Serial.println("EVENT source=storage event=ACTIVATE accepted=no reason=wav_busy");
+    drawFooterUpdate("footer_wav_busy");
+    return;
+  }
   const UiModel before = model;
   const TransitionResult result = audio_probe::dispatch(model, event, selectedTest);
   if (result.accepted) ++acceptedEvents;
@@ -466,13 +536,15 @@ void applyEvent(UiEvent event, uint8_t selectedTest, const char* source) {
 
   const bool resumeCapture = before.state == UiState::StopConfirm &&
                              model.state == UiState::Capturing;
-  runEffect(audio_probe::effectForTransition(before, model), resumeCapture);
+  EffectRequest effect = audio_probe::effectForTransition(before, model);
+  if (effect == EffectRequest::None) effect = audio_probe::effectForEvent(event, model);
+  runEffect(effect, resumeCapture);
   if (before.state != UiState::Result && model.state == UiState::Result) {
     finalizeCaptureResult();
   }
 
   if (result.changed) drawTransition(before);
-  else drawFooterUpdate("footer_rejected");
+  else drawFooterUpdate(result.accepted ? "footer_effect" : "footer_rejected");
   printStatus(source);
 }
 
@@ -536,6 +608,140 @@ void serviceAudioCapture() {
   Serial.printf("AUDIO_BLOCK result=requested capture_block=%u request=%lu\n",
                 static_cast<unsigned>(audio.currentBlocks + 1),
                 static_cast<unsigned long>(audio.blockRequests));
+}
+
+void putLe16(uint8_t* target, uint16_t value) {
+  target[0] = static_cast<uint8_t>(value);
+  target[1] = static_cast<uint8_t>(value >> 8);
+}
+
+void putLe32(uint8_t* target, uint32_t value) {
+  target[0] = static_cast<uint8_t>(value);
+  target[1] = static_cast<uint8_t>(value >> 8);
+  target[2] = static_cast<uint8_t>(value >> 16);
+  target[3] = static_cast<uint8_t>(value >> 24);
+}
+
+void buildWavHeader(uint8_t* header, size_t dataBytes) {
+  std::memset(header, 0, 44);
+  std::memcpy(header, "RIFF", 4);
+  putLe32(header + 4, 36U + static_cast<uint32_t>(dataBytes));
+  std::memcpy(header + 8, "WAVEfmt ", 8);
+  putLe32(header + 16, 16);
+  putLe16(header + 20, 1);
+  putLe16(header + 22, 2);
+  putLe32(header + 24, kSampleRate);
+  putLe32(header + 28, kSampleRate * 4U);
+  putLe16(header + 32, 4);
+  putLe16(header + 34, 16);
+  std::memcpy(header + 36, "data", 4);
+  putLe32(header + 40, static_cast<uint32_t>(dataBytes));
+}
+
+void redrawStorageStatus(const char* scope) {
+  const uint32_t startedUs = micros();
+  drawRow(model.selectedTest);
+  drawFooter();
+  finishRender(startedUs, scope);
+}
+
+void failStorage(const char* reason) {
+  if (storage.file) storage.file.close();
+  SD_MMC.end();
+  storage.state = StorageState::Failed;
+  ++storage.failures;
+  Serial.printf("WAV result=failed reason=%s written=%u/%u\n", reason,
+                static_cast<unsigned>(storage.writtenBytes),
+                static_cast<unsigned>(storage.dataBytes));
+  redrawStorageStatus("storage_failed");
+}
+
+void serviceStorage() {
+  if (storage.state == StorageState::Requested) {
+    if (pcmTest != static_cast<int8_t>(model.selectedTest) ||
+        !captureResults[model.selectedTest].available ||
+        captureResults[model.selectedTest].frames == 0) {
+      failStorage("no_current_capture");
+      return;
+    }
+    storage.dataBytes = static_cast<size_t>(
+        captureResults[model.selectedTest].frames) * 2U * sizeof(int16_t);
+    storage.writtenBytes = 0;
+    if (!SD_MMC.setPins(43, 44, 39, 40, 41, 42)) {
+      failStorage("set_pins");
+      return;
+    }
+    if (!SD_MMC.begin("/sdcard", false)) {
+      failStorage("mount");
+      return;
+    }
+    SD_MMC.remove("/audio_probe.wav");
+    storage.file = SD_MMC.open("/audio_probe.wav", FILE_WRITE);
+    if (!storage.file) {
+      failStorage("open");
+      return;
+    }
+
+    uint8_t header[44];
+    buildWavHeader(header, storage.dataBytes);
+    if (storage.file.write(header, sizeof(header)) != sizeof(header)) {
+      failStorage("header");
+      return;
+    }
+    storage.state = StorageState::Data;
+    Serial.printf("WAV result=writing path=/audio_probe.wav bytes=%u\n",
+                  static_cast<unsigned>(storage.dataBytes));
+    redrawStorageStatus("storage_started");
+    return;
+  }
+
+  if (storage.state == StorageState::Data) {
+    const size_t remaining = storage.dataBytes - storage.writtenBytes;
+    const size_t amount = remaining < kStorageChunkBytes
+                              ? remaining : kStorageChunkBytes;
+    const uint8_t* source = reinterpret_cast<const uint8_t*>(audio.pcm) +
+                            storage.writtenBytes;
+    const size_t written = storage.file.write(source, amount);
+    if (written != amount) {
+      failStorage("data");
+      return;
+    }
+    storage.writtenBytes += written;
+    if (storage.writtenBytes < storage.dataBytes) return;
+
+    storage.file.flush();
+    storage.file.close();
+    storage.state = StorageState::Verify;
+    return;
+  }
+
+  if (storage.state != StorageState::Verify) return;
+  storage.file = SD_MMC.open("/audio_probe.wav", FILE_READ);
+  if (!storage.file) {
+    failStorage("verify_open");
+    return;
+  }
+  if (storage.file.size() != storage.dataBytes + 44U) {
+    failStorage("verify_size");
+    return;
+  }
+  uint8_t actualHeader[44];
+  uint8_t expectedHeader[44];
+  buildWavHeader(expectedHeader, storage.dataBytes);
+  if (storage.file.read(actualHeader, sizeof(actualHeader)) !=
+          sizeof(actualHeader) ||
+      std::memcmp(actualHeader, expectedHeader, sizeof(actualHeader)) != 0) {
+    failStorage("verify_header");
+    return;
+  }
+  storage.file.close();
+  SD_MMC.end();
+  storage.state = StorageState::Complete;
+  ++storage.successes;
+  Serial.printf(
+      "WAV result=complete path=/audio_probe.wav bytes=%u verified=yes\n",
+      static_cast<unsigned>(storage.writtenBytes));
+  redrawStorageStatus("storage_complete");
 }
 
 void pollTouch() {
@@ -604,7 +810,7 @@ void serviceTouch() {
 }
 
 void printCommands() {
-  Serial.println("COMMANDS: STATUS | LIST | NEXT | SELECT 1..6");
+  Serial.println("COMMANDS: STATUS | LIST | NEXT | SELECT 1..6 | WAV");
 }
 
 void executeCommand(char* value) {
@@ -620,6 +826,11 @@ void executeCommand(char* value) {
   if (std::strcmp(value, "LIST") == 0) {
     ++serialEvents;
     applyEvent(UiEvent::Back, model.selectedTest, "serial");
+    return;
+  }
+  if (std::strcmp(value, "WAV") == 0) {
+    ++serialEvents;
+    applyEvent(UiEvent::WriteWav, model.selectedTest, "serial");
     return;
   }
   if (std::strcmp(value, "NEXT") == 0) {
@@ -752,8 +963,8 @@ void setup() {
   const bool audioReady = prepareAudioWithoutStartingMicrophone();
 
   drawAll();
-  Serial.println("AUDIO_PROBE mode=FULL_CAPTURE_AND_ANALYSIS");
-  Serial.println("DISABLED speaker sd direct_touch_fallback");
+  Serial.println("AUDIO_PROBE mode=FULL_CAPTURE_WAV");
+  Serial.println("DISABLED speaker direct_touch_fallback");
   Serial.println("TOUCH_POLICY irq_reads health_2s reset_on_failed_health");
   Serial.printf("TOUCH_READY enabled=%s driver=%s display=%dx%d rotation=%u\n",
                 M5.Touch.isEnabled() ? "yes" : "no",
@@ -771,6 +982,7 @@ void loop() {
   serviceTouchHealth();
   pollSerial();
   serviceAudioCapture();
+  serviceStorage();
   heartbeat();
   M5.delay(1);
 }

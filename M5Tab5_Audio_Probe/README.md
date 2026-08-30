@@ -1,17 +1,15 @@
-# M5Tab5 Audio-Probe – passive Audiovorbereitung
+# M5Tab5 Audio-Probe – Touch, Aufnahme und WAV
 
-Diese Zwischenstufe verwendet den vorgesehenen Zustandsautomaten und die
-Sechs-Zeilen-Oberflaeche. Sie konfiguriert das Mikrofon passiv und reserviert
-die spaeter benoetigten PCM-Puffer, startet aber noch keine Audio- oder
-Speicherfunktion.
+Der Sketch implementiert die vollständige Audio-Probe mit zentralem
+Zustandsautomaten, nichtblockierender 20–30-s-Aufnahme, Pegelauswertung und
+WAV-Ausgabe auf SD. Touch, Audio und Speicher werden als getrennte Services
+im Arduino-`loop()` fortgeschrieben.
 
-Bewusst deaktiviert sind Lautsprecher, Mikrofon-Laufzeit, SD und ein direkter
-Touch-Fallback. Insbesondere werden `M5.Mic.begin()`, `record()` und `end()`
-noch nicht aufgerufen. Der separat versorgte ST7123 erhaelt beim Boot einmal
-einen definierten TP_RST-Impuls. Koordinaten werden nur bei aktivem
-GPIO23-Interrupt und hoechstens alle 20 ms gelesen. Ein
-Firmware-Liveness-Check laeuft alle zwei Sekunden; nur nach NACK oder
-ungueltiger Antwort wird TP_RST ausgeloest.
+Der Lautsprecher und ein direkter Touch-Fallback bleiben deaktiviert. Der
+separat versorgte ST7123 erhaelt beim Boot einen definierten TP_RST-Impuls.
+Koordinaten werden nur bei aktivem GPIO23-Interrupt und hoechstens alle 20 ms
+gelesen. Ein Firmware-Liveness-Check laeuft alle zwei Sekunden; nur nach NACK
+oder ungueltiger Antwort wird TP_RST ausgeloest.
 
 ## Zustandsfolge
 
@@ -33,6 +31,7 @@ STATUS       aktuellen Zustand und Zaehler ausgeben
 SELECT 1..6  einen Test auswaehlen
 NEXT         den naechsten regulaeren Zustandsuebergang ausloesen
 LIST         aus DETAIL oder RESULT zur Liste zurueckkehren
+WAV          aktuelle Aufnahme als /audio_probe.wav speichern
 ```
 
 Jeder erkannte Fingerdruck erzeugt `TOUCH_PRESS`, jeder Zustandsversuch
@@ -97,3 +96,13 @@ Frames bei 15.811,6 Hz und `level_warning=no`. Ein physischer Touch-Stop nach
 20,25 Sekunden lieferte 324.000 Frames bei 15.813,5 Hz, RMS 51/58, null
 Near-Full-Scale-Samples und null Clippingereignisse. Auch nach langer
 Wartezeit blieben Stop-Bestaetigung und weitere Touchbedienung erreichbar.
+
+SD-/WAV-Abnahme vom 30.08.2026: Das Schreiben erfolgt in 16-KiB-Schritten,
+damit Touch und Healthcheck zwischen den Schreibzugriffen weiterlaufen. Zwei
+reale Dateien mit 208.000 beziehungsweise 304.000 PCM-Datenbytes wurden
+vollstaendig geschrieben. Die finale Firmware oeffnete die 304.044 Byte
+grosse Datei erneut und verifizierte Dateigroesse und kompletten 44-Byte-
+WAV-Header (`verified=yes`). Danach wechselte die UI seriell zur Liste und
+erkannte nach rund 54 Minuten Leerlauf einen physischen Touch korrekt. Zwei
+zwischenzeitliche ST7123-Ausfaelle wurden automatisch behoben; kein CPU-Reset,
+Brownout, Speicherfehler oder dauerhafter Touchverlust trat auf.

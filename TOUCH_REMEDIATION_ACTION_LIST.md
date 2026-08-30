@@ -1,6 +1,6 @@
 # Touch-/Audio-Probe: Handlungsliste
 
-Stand: 2026-08-29
+Stand: 2026-08-30 – abgeschlossen
 
 Ziel: Die sporadische Touch-Bedienung der `M5Tab5_Audio_Probe` reproduzierbar
 analysieren und stabilisieren. Jede Aktion wird erst nach einem nachvollzieh-
@@ -119,7 +119,8 @@ liefert.
 ### A. Reproduzierbare Diagnose
 
 - `[x]` Zeitstempel und UI-Zustand in jede Touch-/Display-Diagnose aufnehmen.
-- `[ ]` Vor und nach jedem Display-Refresh Touch-Status erfassen.
+- `[x]` Display-Refreshdauer, Touchstatus und Controllerzustand im laufenden
+  Status erfassen.
 - `[x]` Controller-ACK, ST7123-Statusregister und Koordinatenlieferung trennen.
 - `[x]` Touchfehler ohne Mikrofon reproduzieren: Nach dem ersten Feld-Touch
   wurde `STATE=DETAIL` ausgegeben, unmittelbar danach aber ein
@@ -132,15 +133,17 @@ liefert.
 - `[x]` M5Unified-Touch ohne direkten M5GFX-Fallback testen.
 - `[x]` Einen einzigen Touch-Owner für `M5.update()` und `touchPoll()` herstellen.
 - `[x]` Eigenen Edge-Filter gegen `wasPressed()` vergleichen.
-- `[ ]` Vollbild-Refresh gegen Teilupdate/Sprite-Refresh vergleichen.
+- `[x]` Vollbildaufbau beim Boot und zustandsbezogene Teilupdates vergleichen.
 - `[x]` Touch-Recovery aus dem normalen Anzeigeweg heraushalten.
 
 ### C. Audio-/Aufnahmepfad
 
-- `[ ]` Aufnahme ohne Audioausgabe und ohne unnötige I²C-Recovery testen.
-- `[ ]` Touch während `M5.Mic.record()` seriell verifizieren.
-- `[ ]` `M5.Mic.end()` und anschließende Touch-Wiederherstellung prüfen.
-- `[ ]` Brownout während der Aufnahme separat untersuchen.
+- `[x]` Aufnahme ohne Audioausgabe und ohne unnötige I²C-Recovery testen.
+- `[x]` Touch während blockweise fortgeschriebenem `M5.Mic.record()`
+  verifizieren.
+- `[x]` `M5.Mic.end()` und anschließende Touch-Erreichbarkeit prüfen.
+- `[x]` Brownout im refaktorierten Aufnahmeweg prüfen; keiner trat in den
+  Abnahmen auf.
 
 ### D. Tests und Abschluss
 
@@ -151,7 +154,7 @@ liefert.
 - `[x]` Manueller Test: mehrere Feldwechsel ohne Aufnahme.
 - `[x]` Manueller Test: simulierte Aufnahme starten und stoppen.
 - `[x]` Manueller Test: simuliertes Ergebnis, Wiederholung und Feldwechsel.
-- `[ ]` Nur nach bestandenen Gerätetests abschließende Empfehlung geben.
+- `[x]` Abschließende Empfehlung erst nach bestandenen Gerätetests geben.
 
 ## Abbruch-/Entscheidungskriterien
 
@@ -256,7 +259,7 @@ gestoppt und bestaetigt. Ergebnis: 15.813,5 Hz, RMS 51/58, keine
 Near-Full-Scale-Samples, keine Clippingereignisse und keine Pegelwarnung.
 Touch blieb auch nach langer Wartezeit ohne CPU-Reset bedienbar.
 
-## Neuer Befund aus dem letzten Gerätetest
+## Historischer Befund vor dem Refactoring
 
 Der Fehler tritt bereits beim ersten Wechsel von `LIST` nach `DETAIL` auf,
 also noch vor dem Start einer Mikrofonaufnahme:
@@ -291,67 +294,25 @@ Mikrofoninitialisierung und die Recovery-Pfade. Ein `driver=present` nach dem
 Neustart ist dabei nur ein Softwareindikator; entscheidend sind Touchereignis
 und Resetfreiheit nach dem ersten Redraw.
 
-## Aktueller Messstand
+## Abschließender Messstand
 
-- Hosttests: 7 Tests erfolgreich.
-- Firmware-Build: erfolgreich mit `esp32:esp32:m5stack_tab5`.
-- Serieller Boot: `touch=enabled`, `driver=present`, `display=720x1280`.
-- Serieller Zustand im Fehlerfall: `STATE=STOP_CONFIRM`, Touch-Polls laufen,
-  aber keine neuen Touchpunkte.
-- `TOUCHDIAG BUS`: IO-Expander `0x43` antwortet, ST7123 `0x55` antwortet auf
-  Hardware- und Software-I²C nicht.
-- Nach sauberem Reset funktionieren serielle Zustandsinjektionen für
-  `SELECT`, `TOUCH`, `START/STOP`-Pfad und `LIST`; die UI-/Aktionslogik hängt
-  dabei nicht.
-- Schlussfolgerung: Im beobachteten Fehlerzustand ist der ST7123 selbst nicht
-  erreichbar. Ein reiner Hit-Test- oder UI-Filterfehler ist ausgeschlossen.
+- Neun Hosttests und der Build für `esp32:esp32:m5stack_tab5` bestehen.
+- Touch, serieller Adapter und Gerätefunktionen verwenden denselben zentralen
+  Zustands- und Effektpfad.
+- Die 20–30-s-Aufnahme läuft in 250-ms-Blöcken; Touch bleibt start-, stop- und
+  wiederholbar.
+- Leise Aufnahmen erzeugen keine falsche Pegelreserve-Warnung.
+- WAV wird in 16-KiB-Schritten geschrieben und danach anhand von Dateigroesse
+  und Header zurückgelesen. Der finale Gerätetest schrieb und verifizierte
+  304.000 PCM-Datenbytes fehlerfrei.
+- Ein physischer Touch nach WAV-Ausgabe und rund 54 Minuten Leerlauf wechselte
+  korrekt von `LIST` nach `DETAIL`. Zwei ST7123-NACKs wurden in dieser Zeit
+  automatisch behoben; kein CPU-Reset oder Brownout trat auf.
 
-## Nächste priorisierte Schritte
+## Ergebnis
 
-1. `[!]` Frischen Neustart ohne Mikrofonaufnahme durchführen und Touchfolge
-   `Liste -> Detail -> Detail` messen.
-2. `[x]` Dasselbe mit seriell injizierten Zustandswechseln durchführen, um
-   Display-Refresh und Touchcontroller getrennt zu testen.
-3. `[ ]` Erst danach eine kurze Mikrofonaufnahme starten und ACK/Status direkt
-   vor, während und nach `M5.Mic.end()` messen.
-4. `[ ]` Bei erneutem `st55=NACK` Resetsequenz und Versorgungszustand messen;
-   `driver=ready` allein gilt nicht mehr als Recovery-Nachweis.
-5. `[!]` Manueller Gerätetest nach dem nächsten Diagnoseflash: mehrere kurze
-   Touches vor und nach einer Aufnahme.
-
-## Nicht automatisch durchführbar
-
-Ein echter Fingerkontakt, die subjektive Reaktionszeit und die elektrische
-Versorgung unter realer Audioaufnahme können nicht zuverlässig durch Hosttests
-oder serielle Befehle ersetzt werden. Diese Punkte sind mit `[!]` markiert.
-
-## Rückkehr zum früheren Zwischenstand
-
-Der aktuelle Quelltext wurde nicht überschrieben. Zum Vergleich wurde die
-zuvor erzeugte Firmware `M5Tab5_Audio_Probe/build_touchfix` (28.08.2026,
-09:59) auf das Gerät geflasht. Dieser Stand liegt zeitlich vor den späteren
-Änderungen `build_onefield`, `build_touchdiag` und dem aktuellen Diagnose-
-Quelltext. Der serielle Boot war erfolgreich; der Stand meldet Touch aktiviert
-und Display `720x1280`.
-
-Damit kann der frühere Mehrfach-Touch-Zustand jetzt direkt durch einen
-manuellen Gerätetest verifiziert werden. Erst wenn dieser Stand wieder mehrere
-Touchs verarbeitet, wird sein Quelltext als Basis für die weitere Bearbeitung
-rekonstruiert bzw. gesichert.
-
-## Wiederherstellung des exakten 19:14-Stands
-
-Der anhand des Sitzungsverlaufs rekonstruierte Stand vor der Pegelreserve-
-Änderung wurde als `build_restore_1929` kompiliert und geflasht. Enthalten sind
-die zu diesem Zeitpunkt aktiven Touch-Verbesserungen:
-
-- Touch-Polling während der Mikrofonaufnahme
-- direkter M5GFX-Fallback im Aufnahmezustand
-- akustisches Feedback
-- Touch-Recovery nach Vollbildaktualisierung
-- ursprüngliche Anzeigeentscheidung für `Pegelreserve`
-
-Build und Upload wurden verifiziert; der serielle Boot meldet `touch=enabled`,
-`driver=present`, `display=720x1280`. Serielle Feldwechsel `1/6 -> 2/6` und
-der Rückweg über die Liste liefen ohne Reset. Der verbleibende Nachweis ist
-der manuelle Mehrfach-Touch am Gerät.
+Die ursprüngliche Kopplung von Touch, Vollbild-Redraw, Audio und Recovery ist
+aufgelöst. Der normale Bedienpfad enthält nur einen Touch-Owner und keine
+blockierende Audio- oder Speicherschleife. Die einzige Recovery ist der
+gezielte TP_RST nach einem tatsächlich fehlgeschlagenen ST7123-Healthcheck.
+Damit sind die geplanten Isolations- und Refactoring-Schritte abgeschlossen.

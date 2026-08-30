@@ -52,5 +52,7 @@ int main() {
   dispatch(model, UiEvent::ConfirmStop);
   assert(eventForTap(model, 3, 0) == UiEvent::Back);
   assert(eventForTap(model, 3, 1) == UiEvent::Repeat);
+  assert(eventForTap(model, 3, 2) == UiEvent::WriteWav);
+  assert(effectForEvent(UiEvent::WriteWav, model) == EffectRequest::WriteWav);
   return 0;
 }

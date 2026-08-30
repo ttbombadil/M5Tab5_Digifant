@@ -1,6 +1,6 @@
 # Touch-Refactoring und schrittweise Hardware-Isolation
 
-Stand: 2026-08-29
+Stand: 2026-08-30 – abgeschlossen
 
 ## Ziel
 
@@ -237,7 +237,14 @@ Abnahme:
 
 ### Schritt 8 – SD/WAV und Abschluss
 
-Status: `[ ]`
+Status: `[x]` – chunkweises WAV-Schreiben und Rueckpruefung bestanden. Der
+Storage-Service schreibt pro `loop()` hoechstens 16 KiB und haelt Touch,
+Serial und Healthcheck dadurch erreichbar. Zwei reale Dateien mit 208.000 und
+304.000 PCM-Datenbytes wurden vollstaendig geschrieben. Die finale Datei
+wurde erneut geoeffnet; Groesse und 44-Byte-WAV-Header waren korrekt
+(`verified=yes`). Nach dem Gesamtablauf reagierte die UI seriell und nach rund
+54 Minuten Leerlauf auch physisch. Zwei ST7123-Ausfaelle wurden automatisch
+wiederhergestellt; kein CPU-Reset, Brownout oder Speicherfehler trat auf.
 
 - SD-Mount und WAV-Schreiben als letzten Hardwareeffekt ergänzen.
 - Fehler beim Schreiben dürfen Touch und Zustandsautomat nicht blockieren.

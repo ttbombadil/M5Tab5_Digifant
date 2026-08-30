@@ -41,6 +41,13 @@ class AudioProbeHostTests(unittest.TestCase):
         self.assertIn("kMinCaptureSeconds = 20", source)
         self.assertIn("kMaxCaptureSeconds = 30", source)
         self.assertIn("levelWarning", source)
+        self.assertIn("void serviceStorage()", source)
+        self.assertIn("kStorageChunkBytes", source)
+        self.assertIn("SD_MMC.open", source)
+        self.assertIn("StorageState::Verify", source)
+        self.assertIn("verify_size", source)
+        self.assertIn("verify_header", source)
+        self.assertIn("verified=yes", source)
         self.assertNotIn("while (M5.Mic.isRecording())", source)
 
     def test_audio_buffer_plan(self):
