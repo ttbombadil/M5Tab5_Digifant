@@ -2591,7 +2591,7 @@ freigegeben.
 ## R9 – Schattenabstraktionen bereinigt – 2026-08-25
 
 Die Vorher-/Nachher-Vertragsmatrix liegt in
-`../R9_CONTRACT_MATRIX.md`. Die fünf untersuchten Typen waren nicht Teil der
+`../docs/archive/refactoring/R9_CONTRACT_MATRIX.md`. Die fünf untersuchten Typen waren nicht Teil der
 ausgelieferten Runtime: `GenerationTracker` wurde nicht von den USB-Callbacks
 verwendet, `OperationLifecycle` und `KwpRunnerModel` modellierten nicht die
 produktive KWP-Verdrahtung, `KwpReceiveService` war nur ein Wrapper des

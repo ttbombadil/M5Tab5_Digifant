@@ -4,7 +4,7 @@ Dieses Projekt wird klein und bei Bedarf modular aufgebaut. Neue Unterordner
 oder Schichten entstehen erst, wenn mehrere Dateien oder eine konkrete
 technische Notwendigkeit dies erfordern.
 
-Unverändert verbindlich sind [`../ARCHITECTURE_V2.md`](../ARCHITECTURE_V2.md):
+Unverändert verbindlich sind [`../docs/architecture/ARCHITECTURE_V2.md`](../docs/architecture/ARCHITECTURE_V2.md):
 
 - Der Protocol Runner ist alleiniger Owner von K409-Transport, RX-Verbrauch und
   KWP-Sessionzustand.

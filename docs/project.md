@@ -1,5 +1,8 @@
 # Projekt: KWP1281-Datenlogger für VW 2E (Digifant 1.7) auf M5Stack Tab5
 
+Dateipfade in diesem Dokument sind, sofern nicht anders angegeben,
+repository-root-relativ.
+
 ## 1. Ziel des Projekts
 
 Der Auftrag ist der Aufbau eines autonomen Diagnose-Datenloggers auf Basis des M5Stack Tab5 mit ESP32-P4, der über den AutoDia K409 USB-KKL-Adapter mit dem Digifant-Steuergerät 037 906 024 (VW 2E, Motor 2.0L 8V) kommuniziert und ausgewählte Messwerteblöcke live ausliest, anzeigt und protokolliert.
@@ -392,22 +395,23 @@ Der Logger ist explizit darauf ausgelegt, genau dieses Verhalten im realen Fahrz
 
 Die folgende historische P0–P4-Liste dokumentiert den ursprünglichen
 Implementierungsplan. Der aktuelle funktionale Analyzer-Stand einschließlich
-ECU-/IMU-/SD-Logging ist in `M5Tab5_Digifant_Analyzer/verification.md`
+ECU-/IMU-/SD-Logging ist in `../M5Tab5_Digifant_Analyzer/verification.md`
 dokumentiert. Die Audio-/Touch-Abnahme steht in
-`M5Tab5_Audio_Probe/README.md` und `TOUCH_REMEDIATION_ACTION_LIST.md`.
+`../M5Tab5_Audio_Probe/README.md` und
+`archive/touch/TOUCH_REMEDIATION_ACTION_LIST.md`.
 
 Aktuelle fachliche Restarbeiten:
 
 - Schubabschaltungs-/Leerlaufstatus durch kontrollierte Fahrzeugzustände
   verifizieren.
 - Unbekannte oder nur inferierte Rawwertformeln anhand weiterer Messungen
-  absichern; siehe `DIGIFANT_MEASUREMENT_SEMANTICS.md`.
+  absichern; siehe `digifant/DIGIFANT_MEASUREMENT_SEMANTICS.md`.
 - Sichere Testfahrt durchführen und G69, Drehzahl und Fahrzustand mit dem
   beobachteten Sprotzverhalten korrelieren.
 - R7/den nicht reproduzierten Target-Hänger mit vollständigem Panic-Backtrace
   und Owner-Diagnose weiter untersuchen.
 - Den Motor-Audio-Proof am geplanten Montageort durchführen; siehe
-  `M5Tab5_Audio_Probe/HARDWARE_PROOF.md`.
+  `../M5Tab5_Audio_Probe/HARDWARE_PROOF.md`.
 
 Optionale Erweiterungen wie WLAN-/USB-Export werden erst nach Abschluss der
 fachlichen Messkampagne bewertet.

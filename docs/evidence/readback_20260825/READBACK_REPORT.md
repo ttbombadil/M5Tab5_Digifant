@@ -1,8 +1,8 @@
 # Unabhängiger DLOG-Readback – 2026-08-25
 
 Quelle: reale SD-Karte aus dem Tab5, `/sprotz/g0_s0_86260534_0.dlog`.
-Die Datei wurde unverändert nach `readback_20260825/` kopiert und mit
-`M5Tab5_Digifant_Analyzer/tools/decode_sprotz_log.py` dekodiert.
+Die Datei wurde unverändert nach `docs/evidence/readback_20260825/` kopiert
+und mit `M5Tab5_Digifant_Analyzer/tools/decode_sprotz_log.py` dekodiert.
 
 ## Ergebnis
 

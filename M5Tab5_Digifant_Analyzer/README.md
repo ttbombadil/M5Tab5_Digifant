@@ -66,10 +66,10 @@ Die C++-Hosttests liegen in `tests/`; der DLOG-Test läuft mit
 [`verification.md`](verification.md) nachgewiesen.
 
 - [`ARCHITECTURE.md`](ARCHITECTURE.md): produktive Analyzer-Architektur.
-- [`../ARCHITECTURE_V2.md`](../ARCHITECTURE_V2.md): verbindliche V2-Verträge.
-- [`../IMPLEMENTATION_PLAN_V2.md`](../IMPLEMENTATION_PLAN_V2.md): historischer,
+- [`../docs/architecture/ARCHITECTURE_V2.md`](../docs/architecture/ARCHITECTURE_V2.md): verbindliche V2-Verträge.
+- [`../docs/archive/plans/IMPLEMENTATION_PLAN_V2.md`](../docs/archive/plans/IMPLEMENTATION_PLAN_V2.md): historischer,
   abgeschlossener Implementierungsplan.
-- [`../DIGIFANT_MEASUREMENT_SEMANTICS.md`](../DIGIFANT_MEASUREMENT_SEMANTICS.md):
+- [`../docs/digifant/DIGIFANT_MEASUREMENT_SEMANTICS.md`](../docs/digifant/DIGIFANT_MEASUREMENT_SEMANTICS.md):
   ECU-Felder, Formeln und Evidenz.
 - [`TARGET_ASSERT_XTASKPRIORITYDISINHERIT.md`](TARGET_ASSERT_XTASKPRIORITYDISINHERIT.md):
   Target-Assert-Nachweis und R7-Entscheidung.

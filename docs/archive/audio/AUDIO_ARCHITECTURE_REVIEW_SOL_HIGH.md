@@ -64,8 +64,8 @@ Für diese Bewertung gelten folgende harte Grenzen:
 - Audiofehler dürfen keinen KWP-Reconnect, keinen Logger-Stop und keine
   Änderung am ECU-/IMU-Zustand auslösen.
 - R7 bleibt `BLOCKED`. Die beiden Dokumente
-  [`TARGET_ASSERT_XTASKPRIORITYDISINHERIT.md`](M5Tab5_Digifant_Analyzer/TARGET_ASSERT_XTASKPRIORITYDISINHERIT.md)
-  und [`TAB5_RUNTIME_HANG_DEBUG.md`](M5Tab5_Digifant_Analyzer/TAB5_RUNTIME_HANG_DEBUG.md)
+  [`TARGET_ASSERT_XTASKPRIORITYDISINHERIT.md`](../../../M5Tab5_Digifant_Analyzer/TARGET_ASSERT_XTASKPRIORITYDISINHERIT.md)
+  und [`TAB5_RUNTIME_HANG_DEBUG.md`](../../../M5Tab5_Digifant_Analyzer/TAB5_RUNTIME_HANG_DEBUG.md)
   bleiben maßgeblich und werden nicht erweitert oder „mitgelöst“.
 
 ## 3. Tatsächlich vorhandene Audiohardware
@@ -104,7 +104,7 @@ Projekt führen dadurch automatisch AEC oder Sprotz-Erkennung aus.
 | microSD SDMMC | G43/G44/G39/G40/G41/G42 | CLK/CMD/D0/D1/D2/D3; entspricht dem vorhandenen `SdMmcLogSink` |
 
 Die SD-Pins im Projekt stimmen mit Board- und Libraryquellen überein; siehe
-[`sprotz_logger_target.h`](M5Tab5_Digifant_Analyzer/src/sprotz_logger_target.h).
+[`sprotz_logger_target.h`](../../../M5Tab5_Digifant_Analyzer/src/sprotz_logger_target.h).
 Audio-I²S und SDMMC verwenden unterschiedliche Peripherie und Pins, teilen
 aber CPU, Interruptbudget, internen Speicherbus/PSRAM und letztlich Scheduler-
 Zeit.
@@ -201,7 +201,7 @@ Weitere Grenzen:
 Der Analyzer hat derzeit diese relevanten Eigenschaften:
 
 - Processing läuft mit Priorität 3, Display mit 2, Logger und IMU mit 1;
-  siehe [`M5Tab5_Digifant_Analyzer.ino`](M5Tab5_Digifant_Analyzer/M5Tab5_Digifant_Analyzer.ino).
+  siehe [`M5Tab5_Digifant_Analyzer.ino`](../../../M5Tab5_Digifant_Analyzer/M5Tab5_Digifant_Analyzer.ino).
 - ECU-Snapshots gehen über eine bounded SPSC-Queue, IMU-Samples über einen
   bounded Ring und Befehle über eine bounded MPSC-Queue.
 - `SprotzLoggerService` ist alleiniger Projekt-Owner von `SD_MMC`,
@@ -210,7 +210,7 @@ Der Analyzer hat derzeit diese relevanten Eigenschaften:
   ECU, IMU und Stop nach derselben monotonen Zeitbasis.
 - DLOG V2 hat 26 Byte Recordheader, aber die aktuelle maximale Payload ist auf
   1112 Byte begrenzt; siehe
-  [`sprotz_log_format.h`](M5Tab5_Digifant_Analyzer/src/sprotz_log_format.h).
+  [`sprotz_log_format.h`](../../../M5Tab5_Digifant_Analyzer/src/sprotz_log_format.h).
 - Ein IMU-Record belegt 66 Byte. Bei den vorhandenen 25 Hz sind das rund
   1.650 Byte/s bzw. 5,94 MB/h. 16-kHz-Mono-Audio ist schon ohne Header etwa
   19,4-mal so groß. Ein ECU-Snapshot belegt 1138 Byte; seine tatsächliche Rate
