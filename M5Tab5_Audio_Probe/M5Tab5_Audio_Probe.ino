@@ -13,6 +13,7 @@
 namespace {
 
 using audio_probe::TransitionResult;
+using audio_probe::EffectRequest;
 using audio_probe::UiEvent;
 using audio_probe::UiModel;
 using audio_probe::UiState;
@@ -71,6 +72,9 @@ struct AudioPreparation {
   int16_t* pcm = nullptr;
   int16_t* chunk = nullptr;
   bool configured = false;
+  uint32_t startAttempts = 0;
+  uint32_t startSuccesses = 0;
+  uint32_t stopRequests = 0;
 
   bool buffersReady() const { return pcm != nullptr && chunk != nullptr; }
 };
@@ -101,6 +105,49 @@ bool prepareAudioWithoutStartingMicrophone() {
       static_cast<unsigned>(kChunkSamples * sizeof(int16_t)),
       static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)));
   return audio.configured && audio.buffersReady();
+}
+
+const char* effectName(EffectRequest effect) {
+  switch (effect) {
+    case EffectRequest::StartMicrophone: return "MIC_START";
+    case EffectRequest::StopMicrophone: return "MIC_STOP";
+    case EffectRequest::None: return "NONE";
+  }
+  return "UNKNOWN";
+}
+
+void runEffect(EffectRequest effect) {
+  if (effect == EffectRequest::None) return;
+
+  const uint32_t startedUs = micros();
+  Serial.printf(
+      "EFFECT phase=before request=%s mic_running=%s reset_reason=%d "
+      "int23=%d heap=%u psram_free=%u\n",
+      effectName(effect), M5.Mic.isRunning() ? "yes" : "no",
+      static_cast<int>(esp_reset_reason()), digitalRead(23),
+      static_cast<unsigned>(ESP.getFreeHeap()),
+      static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)));
+
+  bool success = true;
+  if (effect == EffectRequest::StartMicrophone) {
+    ++audio.startAttempts;
+    success = M5.Mic.begin();
+    if (success) ++audio.startSuccesses;
+  } else {
+    ++audio.stopRequests;
+    M5.Mic.end();
+    success = !M5.Mic.isRunning();
+  }
+
+  Serial.printf(
+      "EFFECT phase=after request=%s success=%s mic_running=%s duration_us=%lu "
+      "reset_reason=%d int23=%d heap=%u psram_free=%u\n",
+      effectName(effect), success ? "yes" : "no",
+      M5.Mic.isRunning() ? "yes" : "no",
+      static_cast<unsigned long>(micros() - startedUs),
+      static_cast<int>(esp_reset_reason()), digitalRead(23),
+      static_cast<unsigned>(ESP.getFreeHeap()),
+      static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)));
 }
 
 int16_t contentHeight() { return M5.Display.height() - kFooterHeight; }
@@ -169,9 +216,9 @@ void drawRow(uint8_t row) {
   const char* right = "";
   switch (model.state) {
     case UiState::Detail:
-      left = "LISTE"; middle = "START SIM"; right = "START SIM"; break;
+      left = "LISTE"; middle = "START MIC"; right = "START MIC"; break;
     case UiState::Capturing:
-      left = middle = right = "STOP SIM"; break;
+      left = middle = right = "STOP MIC"; break;
     case UiState::StopConfirm:
       left = "WEITER"; middle = right = "STOP OK"; break;
     case UiState::Result:
@@ -260,9 +307,13 @@ void printStatus(const char* reason) {
       static_cast<unsigned long>(millis()),
       static_cast<unsigned long>(ESP.getFreeHeap()));
   Serial.printf(
-      "AUDIO_STATUS configured=%s buffers=%s mic_runtime=stopped "
-      "psram_free=%u\n",
+      "AUDIO_STATUS configured=%s buffers=%s mic_running=%s starts=%lu/%lu "
+      "stops=%lu psram_free=%u\n",
       audio.configured ? "yes" : "no", audio.buffersReady() ? "ready" : "failed",
+      M5.Mic.isRunning() ? "yes" : "no",
+      static_cast<unsigned long>(audio.startSuccesses),
+      static_cast<unsigned long>(audio.startAttempts),
+      static_cast<unsigned long>(audio.stopRequests),
       static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)));
 }
 
@@ -276,6 +327,8 @@ void applyEvent(UiEvent event, uint8_t selectedTest, const char* source) {
                 source, eventName(event), result.accepted ? "yes" : "no",
                 audio_probe::stateName(before.state),
                 audio_probe::stateName(model.state), model.selectedTest + 1);
+
+  runEffect(audio_probe::effectForTransition(before, model));
 
   if (result.changed) drawTransition(before);
   else drawFooterUpdate("footer_rejected");
@@ -491,8 +544,8 @@ void setup() {
   const bool audioReady = prepareAudioWithoutStartingMicrophone();
 
   drawAll();
-  Serial.println("AUDIO_PROBE mode=MIC_CONFIG_AND_PSRAM");
-  Serial.println("DISABLED speaker microphone_runtime sd direct_touch_fallback");
+  Serial.println("AUDIO_PROBE mode=MIC_LIFECYCLE_NO_RECORDING");
+  Serial.println("DISABLED speaker microphone_record sd direct_touch_fallback");
   Serial.println("TOUCH_POLICY irq_reads health_5s reset_on_failed_health");
   Serial.printf("TOUCH_READY enabled=%s driver=%s display=%dx%d rotation=%u\n",
                 M5.Touch.isEnabled() ? "yes" : "no",

@@ -209,6 +209,19 @@ CPU-Reset, Brownout, Heap- oder PSRAM-Verlust. Der ST7123 fiel in dieser Zeit
 erkannt und durch TP_RST behoben. Die passive Audiokonfiguration hat die
 Touch-Erreichbarkeit damit nicht verschlechtert.
 
+### Mikrofon-Lebenszyklus ohne Aufnahme
+
+Mikrofonstart und -stop werden nun ausschliesslich als zentrale
+`EffectRequest`-Folgen aus den Zustandsuebergaengen erzeugt. Jeder Effekt
+protokolliert Dauer, Erfolg, Resetursache, GPIO23, Heap und freien PSRAM. Ein
+Quelltexttest stellt sicher, dass `record()` in dieser Stufe nicht vorkommt.
+
+20 seriell und 12 per Touch ausgeloeste Start-/Stop-Zyklen bestanden. Alle
+32 Starts und 32 Stopps waren erfolgreich. Die Touchabnahme verarbeitete 48
+von 48 Ereignissen; der jeweils naechste Touch nach `M5.Mic.end()` blieb
+erreichbar. Es gab keinen Reset, Brownout, Touch-Watchdog-Eingriff oder
+Speicherverlust.
+
 ## Neuer Befund aus dem letzten Gerätetest
 
 Der Fehler tritt bereits beim ersten Wechsel von `LIST` nach `DETAIL` auf,

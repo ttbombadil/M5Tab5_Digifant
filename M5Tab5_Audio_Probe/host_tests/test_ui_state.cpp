@@ -10,17 +10,25 @@ int main() {
   assert(result.accepted && result.changed && model.state == UiState::Detail);
   result = dispatch(model, UiEvent::Activate);
   assert(result.accepted && model.state == UiState::Capturing);
+  UiModel detail{UiState::Detail, 0};
+  assert(effectForTransition(detail, model) == EffectRequest::StartMicrophone);
   result = dispatch(model, UiEvent::SelectTest, 2);
   assert(!result.accepted && !result.changed && model.selectedTest == 0);
+  UiModel capturing = model;
   result = dispatch(model, UiEvent::Stop);
   assert(result.accepted && model.state == UiState::StopConfirm);
+  assert(effectForTransition(capturing, model) == EffectRequest::StopMicrophone);
   result = dispatch(model, UiEvent::Resume);
   assert(result.accepted && model.state == UiState::Capturing);
+  assert(effectForTransition(UiModel{UiState::StopConfirm, 0}, model) ==
+         EffectRequest::StartMicrophone);
   dispatch(model, UiEvent::Stop);
   result = dispatch(model, UiEvent::ConfirmStop);
   assert(result.accepted && model.state == UiState::Result);
   result = dispatch(model, UiEvent::Repeat);
   assert(result.accepted && model.state == UiState::Detail);
+  assert(effectForTransition(UiModel{UiState::Result, 0}, model) ==
+         EffectRequest::None);
   result = dispatch(model, UiEvent::Back);
   assert(result.accepted && model.state == UiState::List);
 

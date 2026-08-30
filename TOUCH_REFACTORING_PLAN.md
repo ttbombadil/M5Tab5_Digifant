@@ -176,7 +176,13 @@ Abnahme:
 
 ### Schritt 5 – Mikrofon-Lebenszyklus
 
-Status: `[ ]`
+Status: `[x]` – zentraler Mikrofon-Lebenszyklus bestanden. Eintritt in
+`CAPTURING` erzeugt genau einen `StartMicrophone`-EffectRequest, Verlassen
+genau einen `StopMicrophone`-EffectRequest; aufgenommen wird noch nicht.
+Insgesamt bestanden 32/32 Start-/Stop-Zyklen, davon 20 seriell und 12 per
+Touch. Die manuellen Zyklen umfassten 48 angenommene Touches. Kein Startfehler,
+Reset, Brownout, Touch-Recovery oder Speicherverlust trat auf; das Mikrofon
+war am Ende gestoppt.
 
 - `M5.Mic.begin()` und `M5.Mic.end()` als EffectRequests ausführen.
 - Noch keine längere Aufnahme speichern.

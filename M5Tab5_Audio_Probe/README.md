@@ -70,3 +70,10 @@ reserviert. Nach 125 fehlerfreien seriellen Zustandswechseln lief das reale
 Geraet rund 13,6 Stunden ohne CPU-Reset. Es verarbeitete 367 physische Touches;
 alle 34 erkannten ST7123-Ausfaelle wurden automatisch wiederhergestellt. Heap
 und freier PSRAM blieben konstant, die Mikrofon-Laufzeit blieb gestoppt.
+
+Mikrofon-Lebenszyklus vom 30.08.2026: Start und Stop werden als zentrale
+Effektanforderungen aus den UI-Uebergaengen abgeleitet. `record()` bleibt
+weiterhin ausgeschlossen. 20 serielle und 12 physische Zyklen bestanden
+vollstaendig; alle 32 Starts und Stopps waren erfolgreich. Die physischen
+Zyklen lieferten 48 angenommene Touches ohne Ablehnung. Kein Reset, Brownout,
+Touch-Recovery, Heap- oder PSRAM-Verlust trat auf.

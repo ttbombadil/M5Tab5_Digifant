@@ -10,6 +10,7 @@ enum class UiState : uint8_t { List, Detail, Capturing, StopConfirm, Result };
 enum class UiEvent : uint8_t {
   None, SelectTest, Activate, Stop, Resume, ConfirmStop, CompleteCapture, Repeat, Back
 };
+enum class EffectRequest : uint8_t { None, StartMicrophone, StopMicrophone };
 
 struct UiModel {
   UiState state = UiState::List;
@@ -69,6 +70,17 @@ inline TransitionResult dispatch(UiModel& model, UiEvent event, uint8_t selected
       break;
   }
   return {accepted, before.state != model.state || before.selectedTest != model.selectedTest};
+}
+
+inline EffectRequest effectForTransition(const UiModel& before,
+                                         const UiModel& after) {
+  if (before.state != UiState::Capturing && after.state == UiState::Capturing) {
+    return EffectRequest::StartMicrophone;
+  }
+  if (before.state == UiState::Capturing && after.state != UiState::Capturing) {
+    return EffectRequest::StopMicrophone;
+  }
+  return EffectRequest::None;
 }
 
 inline UiEvent eventForTap(const UiModel& model, uint8_t row, uint8_t zone) {
