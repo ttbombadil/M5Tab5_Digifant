@@ -1,8 +1,12 @@
 {
     "files.exclude": {
-        "build": false,
-        ".vscode": false,
-        "build_usb_check": false,
-        "tools": false
+        "build": true,
+        ".vscode": true,
+        "build_usb_check": true,
+        "tools": true,
+        ".venv": true,
+        "build_hw": true,
+        "build_sim": true,
+        ".gitignore": true
     }
 }
