@@ -158,7 +158,13 @@ Abnahme:
 
 ### Schritt 4 – Mikrofon nur konfigurieren
 
-Status: `[ ]`
+Status: `[x]` – passive Audiovorbereitung und Langzeitabnahme bestanden. Die
+Mikrofonparameter wurden gesetzt und 1.920.000 Byte Zielpuffer sowie 16.000
+Byte Blockpuffer im PSRAM reserviert. Der Sketch enthaelt in dieser Stufe
+keinen Aufruf von `M5.Mic.begin()`, `record()` oder `end()`. In rund 13,6
+Stunden wurden 367 physische Touches verarbeitet. Alle 34 erkannten
+ST7123-Ausfaelle wurden ohne CPU-Reset wiederhergestellt; Heap und freier
+PSRAM blieben konstant.
 
 - Mikrofonparameter setzen und Speicher reservieren.
 - `M5.Mic.begin()`, `record()` und `end()` noch nicht aufrufen.

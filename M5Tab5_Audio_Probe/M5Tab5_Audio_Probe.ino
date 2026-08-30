@@ -1,4 +1,5 @@
 #include <M5Unified.h>
+#include <esp_heap_caps.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -6,8 +7,8 @@
 
 #include "ui_state.h"
 
-// Touch-only renderer stage for isolating the intermittent Tab5 touch failure.
-// Deliberately disabled: speaker, microphone, SD and runtime recovery.
+// Renderer plus passive audio preparation. Microphone runtime, speaker and SD
+// remain disabled so this stage cannot start I2S or an audio recording.
 
 namespace {
 
@@ -21,6 +22,16 @@ constexpr uint32_t kHeartbeatMs = 5000;
 constexpr uint32_t kTouchPollMs = 20;
 constexpr uint32_t kTouchReleaseMs = 30;
 constexpr uint32_t kTouchHealthMs = 5000;
+constexpr uint32_t kSampleRate = 16000;
+constexpr uint32_t kMaxCaptureSeconds = 30;
+constexpr uint32_t kChunkFrames = kSampleRate / 4;  // 250 ms
+constexpr uint32_t kMaxFrames = kSampleRate * kMaxCaptureSeconds;
+constexpr size_t kPcmSamples = static_cast<size_t>(kMaxFrames) * 2U;
+constexpr size_t kChunkSamples = static_cast<size_t>(kChunkFrames) * 2U;
+static_assert(kPcmSamples * sizeof(int16_t) == 1920000,
+              "30 s stereo PCM reservation changed");
+static_assert(kChunkSamples * sizeof(int16_t) == 16000,
+              "250 ms stereo chunk reservation changed");
 constexpr uint16_t kBackground = TFT_BLACK;
 constexpr uint16_t kInactive = 0x2104;
 constexpr uint16_t kDetail = 0x03EF;
@@ -55,6 +66,42 @@ uint8_t lastTouchFirmware = 0;
 int8_t lastTouchIntLevel = -1;
 char command[32] = {};
 size_t commandLength = 0;
+
+struct AudioPreparation {
+  int16_t* pcm = nullptr;
+  int16_t* chunk = nullptr;
+  bool configured = false;
+
+  bool buffersReady() const { return pcm != nullptr && chunk != nullptr; }
+};
+
+AudioPreparation audio;
+
+bool prepareAudioWithoutStartingMicrophone() {
+  auto mic = M5.Mic.config();
+  mic.sample_rate = kSampleRate;
+  mic.input_channel = m5::input_channel_t::input_stereo;
+  mic.over_sampling = 1;
+  mic.magnification = 2;
+  mic.noise_filter_level = 0;
+  M5.Mic.config(mic);
+  audio.configured = true;
+
+  audio.pcm = static_cast<int16_t*>(heap_caps_malloc(
+      kPcmSamples * sizeof(int16_t), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+  audio.chunk = static_cast<int16_t*>(heap_caps_malloc(
+      kChunkSamples * sizeof(int16_t), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+
+  Serial.printf(
+      "AUDIO_PREP configured=%s buffers=%s rate=%lu channels=2 pcm_bytes=%u "
+      "chunk_bytes=%u psram_free=%u\n",
+      audio.configured ? "yes" : "no", audio.buffersReady() ? "ready" : "failed",
+      static_cast<unsigned long>(kSampleRate),
+      static_cast<unsigned>(kPcmSamples * sizeof(int16_t)),
+      static_cast<unsigned>(kChunkSamples * sizeof(int16_t)),
+      static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)));
+  return audio.configured && audio.buffersReady();
+}
 
 int16_t contentHeight() { return M5.Display.height() - kFooterHeight; }
 int16_t rowHeight() { return contentHeight() / audio_probe::kTestCount; }
@@ -212,6 +259,11 @@ void printStatus(const char* reason) {
       static_cast<unsigned long>(touchRecoveries), lastTouchFirmware,
       static_cast<unsigned long>(millis()),
       static_cast<unsigned long>(ESP.getFreeHeap()));
+  Serial.printf(
+      "AUDIO_STATUS configured=%s buffers=%s mic_runtime=stopped "
+      "psram_free=%u\n",
+      audio.configured ? "yes" : "no", audio.buffersReady() ? "ready" : "failed",
+      static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)));
 }
 
 void applyEvent(UiEvent event, uint8_t selectedTest, const char* source) {
@@ -436,10 +488,11 @@ void setup() {
   config.internal_imu = false;
   M5.begin(config);
   const bool touchReady = initializeTouchController();
+  const bool audioReady = prepareAudioWithoutStartingMicrophone();
 
   drawAll();
-  Serial.println("AUDIO_PROBE mode=TOUCH_RENDERER_50HZ");
-  Serial.println("DISABLED speaker microphone sd direct_touch_fallback");
+  Serial.println("AUDIO_PROBE mode=MIC_CONFIG_AND_PSRAM");
+  Serial.println("DISABLED speaker microphone_runtime sd direct_touch_fallback");
   Serial.println("TOUCH_POLICY irq_reads health_5s reset_on_failed_health");
   Serial.printf("TOUCH_READY enabled=%s driver=%s display=%dx%d rotation=%u\n",
                 M5.Touch.isEnabled() ? "yes" : "no",
@@ -447,6 +500,7 @@ void setup() {
                 M5.Display.height(),
                 static_cast<unsigned>(M5.Display.getRotation()));
   if (!touchReady) Serial.println("TOUCH_ERROR boot_reset_failed");
+  if (!audioReady) Serial.println("AUDIO_ERROR passive_preparation_failed");
   printCommands();
   printStatus("boot");
 }

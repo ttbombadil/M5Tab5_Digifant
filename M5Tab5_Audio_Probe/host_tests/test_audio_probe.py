@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 import math
+from pathlib import Path
 import struct
 import unittest
+
+
+SKETCH = Path(__file__).resolve().parents[1] / "M5Tab5_Audio_Probe.ino"
 
 
 def stats(samples, threshold=32752):
@@ -26,6 +30,21 @@ def wav_header(frames, rate=16000, channels=2):
 
 
 class AudioProbeHostTests(unittest.TestCase):
+    def test_passive_microphone_stage_has_no_runtime_calls(self):
+        source = SKETCH.read_text(encoding="utf-8")
+        self.assertIn("M5.Mic.config(mic)", source)
+        self.assertIn("MALLOC_CAP_SPIRAM", source)
+        self.assertNotIn("M5.Mic.begin(", source)
+        self.assertNotIn("M5.Mic.record(", source)
+        self.assertNotIn("M5.Mic.end(", source)
+
+    def test_audio_buffer_plan(self):
+        sample_rate = 16000
+        channels = 2
+        bytes_per_sample = 2
+        self.assertEqual(sample_rate * 30 * channels * bytes_per_sample, 1_920_000)
+        self.assertEqual((sample_rate // 4) * channels * bytes_per_sample, 16_000)
+
     def test_wav_header_and_pcm_length(self):
         header = wav_header(3)
         self.assertEqual(header[:4], b"RIFF")

@@ -196,6 +196,19 @@ Healthcheck erkannt und vollstaendig wiederhergestellt. Endwerte: 2631
 Healthchecks, 1046 Interruptflanken, Heap 423640 Byte, maximal 39,5 ms fuer den
 Boot-Vollaufbau, kein CPU-Reset und kein Brownout.
 
+### Passive Audiovorbereitung
+
+In der naechsten Isolationsstufe wurden ausschliesslich die Mikrofonparameter
+gesetzt und zwei PSRAM-Puffer reserviert. Mikrofonstart, Aufnahme und Stop
+blieben per Quelltexttest ausgeschlossen. Neun Hosttests, der Tab5-Build und
+125 serielle Zustandswechsel bestanden.
+
+Die physische Langzeitabnahme erreichte rund 13,6 Stunden und 367 Touches ohne
+CPU-Reset, Brownout, Heap- oder PSRAM-Verlust. Der ST7123 fiel in dieser Zeit
+34-mal voruebergehend aus; alle 34 Fehler wurden vom Firmware-Healthcheck
+erkannt und durch TP_RST behoben. Die passive Audiokonfiguration hat die
+Touch-Erreichbarkeit damit nicht verschlechtert.
+
 ## Neuer Befund aus dem letzten Gerätetest
 
 Der Fehler tritt bereits beim ersten Wechsel von `LIST` nach `DETAIL` auf,

@@ -1,14 +1,17 @@
-# M5Tab5 Audio-Probe – Touch-only-Baseline
+# M5Tab5 Audio-Probe – passive Audiovorbereitung
 
-Diese Zwischenstufe isoliert die Touchbedienung der Audio-Probe. Sie verwendet
-bereits den vorgesehenen Zustandsautomaten und die Sechs-Zeilen-Oberflaeche,
-fuehrt aber noch keine Audio- oder Speicherfunktion aus.
+Diese Zwischenstufe verwendet den vorgesehenen Zustandsautomaten und die
+Sechs-Zeilen-Oberflaeche. Sie konfiguriert das Mikrofon passiv und reserviert
+die spaeter benoetigten PCM-Puffer, startet aber noch keine Audio- oder
+Speicherfunktion.
 
-Bewusst deaktiviert sind Lautsprecher, Mikrofon, SD und ein direkter
-Touch-Fallback. Der separat versorgte ST7123 erhaelt beim Boot einmal einen
-definierten TP_RST-Impuls. Koordinaten werden nur bei aktivem GPIO23-Interrupt
-und hoechstens alle 20 ms gelesen. Ein Firmware-Liveness-Check laeuft alle
-fuenf Sekunden; nur nach NACK oder ungueltiger Antwort wird TP_RST ausgeloest.
+Bewusst deaktiviert sind Lautsprecher, Mikrofon-Laufzeit, SD und ein direkter
+Touch-Fallback. Insbesondere werden `M5.Mic.begin()`, `record()` und `end()`
+noch nicht aufgerufen. Der separat versorgte ST7123 erhaelt beim Boot einmal
+einen definierten TP_RST-Impuls. Koordinaten werden nur bei aktivem
+GPIO23-Interrupt und hoechstens alle 20 ms gelesen. Ein
+Firmware-Liveness-Check laeuft alle fuenf Sekunden; nur nach NACK oder
+ungueltiger Antwort wird TP_RST ausgeloest.
 
 ## Zustandsfolge
 
@@ -60,3 +63,10 @@ dem Boot sowie 118 physische Touches ueber rund 3,65 Stunden. Acht reale
 Health-Ausfaelle des ST7123 wurden erkannt und automatisch wiederhergestellt.
 Maximale Renderdauer 39,5 ms beim Boot, Teilupdates typischerweise etwa 5 bis
 11 ms; kein CPU-Reset, Brownout oder Heapverlust.
+
+Passive Audiostufe vom 30.08.2026: 16 kHz Stereo konfiguriert, 1.920.000 Byte
+fuer 30 Sekunden PCM und 16.000 Byte fuer einen 250-ms-Block im PSRAM
+reserviert. Nach 125 fehlerfreien seriellen Zustandswechseln lief das reale
+Geraet rund 13,6 Stunden ohne CPU-Reset. Es verarbeitete 367 physische Touches;
+alle 34 erkannten ST7123-Ausfaelle wurden automatisch wiederhergestellt. Heap
+und freier PSRAM blieben konstant, die Mikrofon-Laufzeit blieb gestoppt.
