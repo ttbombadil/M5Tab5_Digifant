@@ -14,9 +14,12 @@
                 "${workspaceFolder}/M5Tab5_Touch_Probe",
                 "${env:HOME}/Documents/Arduino/libraries/M5Unified/src",
                 "${env:HOME}/Documents/Arduino/libraries/M5GFX/src",
+                "${env:HOME}/Documents/Arduino/libraries/M5GFX/src/lgfx/v1/platforms",
                 "${env:HOME}/Library/Arduino15/packages/esp32/hardware/esp32/*/cores/esp32",
                 "${env:HOME}/Library/Arduino15/packages/esp32/hardware/esp32/*/variants/m5stack_tab5",
+                "${env:HOME}/Library/Arduino15/packages/esp32/hardware/esp32/*/libraries/FS/src",
                 "${env:HOME}/Library/Arduino15/packages/esp32/tools/esp32p4_es-libs/*/include/**",
+                "${env:HOME}/Library/Arduino15/packages/esp32/tools/esp32p4_es-libs/*/qio_qspi/include",
                 "${env:HOME}/Library/Arduino15/packages/esp32/tools/esp-rv32/*/riscv32-esp-elf/include/**"
             ],
             "defines": [
@@ -26,12 +29,19 @@
                 "ARDUINO_ARCH_ESP32",
                 "ARDUINO_BOARD=\"M5STACK_TAB5\"",
                 "ARDUINO_VARIANT=\"m5stack_tab5\"",
+                "ESP_PLATFORM",
+                "ESP32=ESP32",
+                "CONFIG_IDF_TARGET_ESP32P4",
+                "ESP32P4",
                 "BOARD_HAS_PSRAM",
                 "ARDUINO_USB_MODE=1",
                 "ARDUINO_USB_CDC_ON_BOOT=1"
             ],
             "cStandard": "c11",
-            "cppStandard": "c++17"
+            "cppStandard": "c++17",
+            "forcedInclude": [
+                "${env:HOME}/Library/Arduino15/packages/esp32/hardware/esp32/3.3.11/cores/esp32/Arduino.h"
+            ]
         }
     ]
 }
