@@ -101,7 +101,7 @@ hier nicht erneut als offen geführt.
 Die Feldbedeutungen und Prüfbereiche wurden direkt gegen folgende lokale VW/VAG-
 Unterlage geprüft:
 
-`VWGolf3_2E–DigifantInjectionAndIgnitionSystemEdition_04-1993.pdf`
+eine lokale, nicht versionierte VW/VAG-Prüfunterlage von 04/1993
 
 Die Unterlage bestätigt die 1-basierte V.A.G.-1551-Anzeige als folgende
 0-basierte Snapshot-Zonen:

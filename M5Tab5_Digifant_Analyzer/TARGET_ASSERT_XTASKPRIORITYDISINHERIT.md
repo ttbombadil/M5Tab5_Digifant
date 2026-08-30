@@ -87,7 +87,7 @@ Marker wird von `LoggerTimeMerge` verworfen und erreicht weder
 
 ## Kontrollierte Targetläufe
 
-Target: realer M5Stack Tab5/ESP32-P4, `/dev/cu.usbmodem2101`, eingelegte
+Target: realer M5Stack Tab5/ESP32-P4, `<serial-port>`, eingelegte
 microSD, K409/Digifant-ECU und IMU aktiv. Produktionsbuild:
 916304 Byte Flash, 157012 Byte globale Daten.
 

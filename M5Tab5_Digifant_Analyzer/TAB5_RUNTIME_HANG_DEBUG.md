@@ -6,7 +6,7 @@ werden nicht verändert.
 
 ## Bereits belastbarer Befund
 
-Im beobachteten Hängezustand blieb `/dev/cu.usbmodem21101` am Host
+Im beobachteten Hängezustand blieb `<serial-port>` am Host
 enumeriert. Ein 55-s-Hostversuch mit 21 `TAB n`- und sechs `STATUS`-Befehlen
 erhielt keine einzige Anwendungsausgabe. Ein reiner Touchfehler erklärt den
 Befund daher nicht; offen sind insbesondere ein blockierter Serialtask, ein
@@ -21,7 +21,7 @@ KWP-, Queue-, Logger- oder DLOG-Verträge:
 arduino-cli compile --fqbn esp32:esp32:m5stack_tab5 \
   --build-property 'compiler.cpp.extra_flags=-DTAB5_RUNTIME_DEBUG=1 -DTAB5_RUNTIME_DEBUG_WATCHDOG=1' \
   M5Tab5_Digifant_Analyzer
-arduino-cli upload --fqbn esp32:esp32:m5stack_tab5 --port /dev/cu.usbmodem21101 \
+arduino-cli upload --fqbn esp32:esp32:m5stack_tab5 --port <serial-port> \
   --build-property 'compiler.cpp.extra_flags=-DTAB5_RUNTIME_DEBUG=1 -DTAB5_RUNTIME_DEBUG_WATCHDOG=1' \
   M5Tab5_Digifant_Analyzer
 ```
@@ -53,7 +53,7 @@ Loggerbefehle.
 
 ```sh
 python3 M5Tab5_Digifant_Analyzer/tools/run_tab5_runtime_probe.py \
-  --port /dev/cu.usbmodem21101 --mode a --minutes 30 \
+  --port <serial-port> --mode a --minutes 30 \
   --log /tmp/tab5-hang-A-no-sd.log
 ```
 
@@ -113,7 +113,7 @@ Der Debug-Build (`TAB5_RUNTIME_DEBUG=1`,
 `TAB5_RUNTIME_DEBUG_WATCHDOG=1`) wurde auf dem ESP32-P4 mit Arduino-ESP32
 3.3.11 ausgeführt. K409 war abgezogen; die verfügbare Hardware enthielt die
 SD-Karte (`storage_present=1`). Der Port war nach dem Upload
-`/dev/cu.usbmodem1101`.
+`<serial-port>`.
 
 - A: 30 Minuten, vom Host bestätigt mit 900/900 `TAB`-Antworten und 180/180
   `DEBUG_STATUS`-Antworten (vorhandene Nutzeraufzeichnung).

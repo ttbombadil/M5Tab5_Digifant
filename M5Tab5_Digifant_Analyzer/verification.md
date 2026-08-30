@@ -26,7 +26,7 @@ Datum: 2026-08-20
 - GREEN ausgeführt: `arduino-cli compile --fqbn esp32:esp32:m5stack_tab5 M5Tab5_Digifant_Analyzer`
   erfolgreich; Sketch 521804 Bytes, globale Variablen 27184 Bytes.
 - Board/FQBN: M5Stack Tab5 / `esp32:esp32:m5stack_tab5`, Arduino-ESP32 3.3.10.
-- Upload auf `/dev/cu.usbmodem2101`: erfolgreich; ESP32-P4 erkannt und Flashdaten
+- Upload auf `<serial-port>`: erfolgreich; ESP32-P4 erkannt und Flashdaten
   verifiziert.
 - Serialmonitor via `screen` auf 115200 Baud: erfolgreich; empfangen wurden
   `M5Tab5_Digifant_Analyzer: smoke test started` und wiederholte
@@ -46,7 +46,7 @@ Datum: 2026-08-20
   anschließender Testlauf: PASS. VID/PID-Filter und getrennte Generationen
   für zwei K409-Verbindungen sind geprüft.
 - TARGET: Sketch mit EspUsbHost 2.7.8 und Arduino-ESP32 3.3.10 kompiliert und
-  auf `/dev/cu.usbmodem2101` geflasht: PASS.
+  auf `<serial-port>` geflasht: PASS.
 - TARGET Serial: `M5Tab5_Digifant_Analyzer: smoke test started` und laufende
   Statusmeldungen empfangen: PASS.
 - HW-K409: kein `K409_CONNECTED`-Ereignis; am Tab5-USB-Host wurde während der
@@ -389,7 +389,7 @@ R9 entfernt. Die entsprechenden Generations- und Completionverträge prüfen
 
 Der KWP-Core wurde in den Target-Sketch eingebunden und mit dem lokalen
 EspUsbHost-Fork geflasht (FQBN `esp32:esp32:m5stack_tab5`, Upload auf
-`/dev/cu.usbmodem101`: PASS). Der Probe führte Busruhe, tokenisierte
+`<serial-port>`: PASS). Der Probe führte Busruhe, tokenisierte
 Baud-/Break-Aktionen und die absolute 5-Baud-Sequenz aus. Der reale Targetlauf
 mit angeschlossenem K409/FTDI ergab:
 
@@ -554,7 +554,7 @@ bleibt wegen der noch fehlenden vollständigen Gruppenabnahme
 ### V2-005 – Targetregression nach Completion-/Pending-Korrektur
 
 Mit angeschlossenem K409 und eingeschalteter Zündung wurde der Build auf dem
-realen M5Stack Tab5 (`esp32:esp32:m5stack_tab5`, `/dev/cu.usbmodem101`)
+realen M5Stack Tab5 (`esp32:esp32:m5stack_tab5`, `<serial-port>`)
 neu gestartet. Die serielle Aufzeichnung ist vollständig bis zum Ende des
 5-Sekunden-Messprobes erfolgt:
 
@@ -743,7 +743,7 @@ Serialausgabe kann bei voller/gestörter Konsole nur Queue-Drops erzeugen; sie
 wartet nicht im RX-, ACK- oder MeasurementRunner-Pfad.
 
 Targettest: realer M5Stack Tab5 + K409/FT232R + Digifant-ECU, FQBN
-`esp32:esp32:m5stack_tab5`, Port `/dev/cu.usbmodem101`. Upload und serieller
+`esp32:esp32:m5stack_tab5`, Port `<serial-port>`. Upload und serieller
 Lauf wurden nach Schließen des vorherigen Monitors erfolgreich ausgeführt.
 Repräsentative Ausgabe:
 
@@ -785,7 +785,7 @@ keine Runtime-UI geändert.
 ### Aktueller Build – Wiederholung ohne Runner-Logging
 
 Der aktuelle Sketch wurde anschließend erneut mit `arduino-cli compile` gebaut,
-auf `/dev/cu.usbmodem101` geflasht und nach einem frischen ECU-Start 60 s
+auf `<serial-port>` geflasht und nach einem frischen ECU-Start 60 s
 beobachtet. Die per-Byte-/per-Aktionsausgabe des MeasurementRunner bleibt dabei
 deaktiviert; serielle Diagnose stammt ausschließlich aus dem entkoppelten
 Logger-Task.
@@ -852,7 +852,7 @@ alle tests/*_test.cpp, C++20 -Wall -Wextra -Wpedantic -Werror: PASS
 alle tests/*_test.cpp, ASan/UBSan: PASS
 tools/check_pipeline_v2_009.sh: PASS
 arduino-cli compile --fqbn esp32:esp32:m5stack_tab5 M5Tab5_Digifant_Analyzer: PASS
-arduino-cli upload -p /dev/cu.usbmodem101 --fqbn esp32:esp32:m5stack_tab5: PASS
+arduino-cli upload -p <serial-port> --fqbn esp32:esp32:m5stack_tab5: PASS
 ```
 
 Targetlauf mit Tab5 + K409/FT232R + Digifant-ECU nach der Ring-Umverdrahtung:
@@ -888,7 +888,7 @@ Nachweise sind grün, V2-010 darf erst nach einem erneuten 60-s-Lauf mit
 `rx_ingress_drops=0` beginnen.
 
 Ein weiterer frischer Tab5-Reset nach erneutem Zündungsstart wurde ebenfalls
-ausgeführt (`/dev/cu.usbmodem101`, gleicher FQBN). Der K409 wurde erneut als
+ausgeführt (`<serial-port>`, gleicher FQBN). Der K409 wurde erneut als
 Generation 1 erkannt und die Preinit-Control-Operationen completeten; die ECU-
 Antwort blieb jedoch aus:
 
@@ -915,7 +915,7 @@ V2-010 bleibt blockiert.
 ## Known-Good-Referenztest zur Hardwareabgrenzung
 
 Zur Abgrenzung zwischen V2-Ringpfad und Hardware wurde der unveränderte
-`M5Tab5_Digifant_Proto` mit demselben Board/FQBN auf `/dev/cu.usbmodem101`
+`M5Tab5_Digifant_Proto` mit demselben Board/FQBN auf `<serial-port>`
 kompiliert und geflasht. Auch der Prototyp erreichte die 5-Baud-Phase, erhielt
 aber danach keinen ECU-Sync:
 
@@ -942,7 +942,7 @@ und Disconnect werden über `CriticalTransportEventRing` korreliert; die
 Die drei bewährten FTDI-Preinit-Controls aus der Known-Good-Referenz wurden vor
 dem Core-Handshake beibehalten.
 
-Nach Reflash mit FQBN `esp32:esp32:m5stack_tab5` auf `/dev/cu.usbmodem1101`
+Nach Reflash mit FQBN `esp32:esp32:m5stack_tab5` auf `<serial-port>`
 meldete der reale Tab5/K409/ECU-Lauf:
 
 ```text
@@ -960,7 +960,7 @@ nachgewiesen. Der Aufzeichnungslauf wurde vor dem abschließenden
 60-s-Gateabschluss mit allen Schlusszählern ist deshalb noch offen.
 
 Der anschließende vollständige Gate-Lauf nach frischem Reflash wurde mit
-`/dev/cu.usbmodem1101` durchgeführt und ist für V2-009 grün:
+`<serial-port>` durchgeführt und ist für V2-009 grün:
 
 ```text
 KWP_TARGET_RESULT=PASS
@@ -999,7 +999,7 @@ check_pipeline_v2_010.sh: PASS
 Targetcompile esp32:esp32:m5stack_tab5: PASS
 ```
 
-Realer Regressionslauf nach Reflash auf `/dev/cu.usbmodem1101`:
+Realer Regressionslauf nach Reflash auf `<serial-port>`:
 
 ```text
 KWP_TARGET_RESULT=PASS
@@ -1038,7 +1038,7 @@ alle Hosttests ASan/UBSan: PASS
 Targetcompile esp32:esp32:m5stack_tab5: PASS
 ```
 
-Realer ECU-Lauf auf `/dev/cu.usbmodem1101`:
+Realer ECU-Lauf auf `<serial-port>`:
 
 ```text
 KWP_TARGET_RESULT=PASS
@@ -1071,7 +1071,7 @@ alle Hosttests ASan/UBSan: PASS
 Targetcompile esp32:esp32:m5stack_tab5: PASS
 ```
 
-Realer ECU-Lauf nach Reflash auf `/dev/cu.usbmodem1101`:
+Realer ECU-Lauf nach Reflash auf `<serial-port>`:
 
 ```text
 KWP_TARGET_RESULT=PASS
@@ -1104,7 +1104,7 @@ check_pipeline_v2_013.sh: PASS
 Targetcompile esp32:esp32:m5stack_tab5: PASS
 ```
 
-Realer ECU-Lauf nach Reflash auf `/dev/cu.usbmodem1101`:
+Realer ECU-Lauf nach Reflash auf `<serial-port>`:
 
 ```text
 KWP_TARGET_RESULT=PASS
@@ -1141,10 +1141,10 @@ alle Hosttests C++20/Werror: PASS
 alle Hosttests ASan/UBSan: PASS
 check_pipeline_v2_014.sh: PASS
 Targetcompile esp32:esp32:m5stack_tab5: PASS
-Upload /dev/cu.usbmodem1101: PASS
+Upload <serial-port>: PASS
 ```
 
-Realer ECU-Lauf nach Reflash auf `/dev/cu.usbmodem1101`:
+Realer ECU-Lauf nach Reflash auf `<serial-port>`:
 
 ```text
 KWP_TARGET_RESULT=PASS
@@ -1172,7 +1172,7 @@ bei erfolgreicher Mailbox-Entnahme; Wartezyklen ändern den Framebuffer nicht.
 ```text
 Targetcompile esp32:esp32:m5stack_tab5: PASS
 check_pipeline_v2_014.sh: PASS
-Upload /dev/cu.usbmodem1101: PASS
+Upload <serial-port>: PASS
 KWP_TARGET_RESULT=PASS
 KWP_MEASUREMENT state=1 stage=4 group=4 rx_bytes=3428 stale=0
 KWP_MEASUREMENT frames=81 ident=3 ack=25 headers=24 bodies=29 refused=0 rejected=0
@@ -1202,7 +1202,7 @@ GREEN: full_ecu_snapshot_test: PASS
 alle Hosttests C++20/Werror: PASS
 alle Hosttests ASan/UBSan: PASS
 Targetcompile esp32:esp32:m5stack_tab5: PASS
-Upload /dev/cu.usbmodem1101: PASS
+Upload <serial-port>: PASS
 ```
 
 Realer ECU-Lauf:
@@ -1433,7 +1433,7 @@ kwp_invalid_length_trace_test ASan/UBSan: PASS
 kwp_byte_engine_test ASan/UBSan: PASS
 kwp_measurement_session_test ASan/UBSan: PASS
 Targetcompile esp32:esp32:m5stack_tab5: PASS
-Upload /dev/cu.usbmodem1101: PASS
+Upload <serial-port>: PASS
 ```
 
 Der reale Lauf mit Tab5, K409 und laufender Digifant-ECU dauerte das volle
@@ -1477,8 +1477,7 @@ Echo-/Pending-/Reset-Korrektur abgeleitet und in einem weiteren ECU-Lauf
 verifiziert werden.
 ## Direkte VW/VAG-Quellenprüfung der Digifant-Semantik
 
-Am 2026-08-24 wurde die lokale Primärquelle
-`../VWGolf3_2E–DigifantInjectionAndIgnitionSystemEdition_04-1993.pdf`
+Am 2026-08-24 wurde eine lokale, nicht versionierte Primärquelle
 (14 Seiten, VW/VAG-Prüfunterlage) direkt per PDF-Textauswertung geprüft.
 
 Ergebnis: Die offizielle Feldzuordnung bestätigt die vollständige 26-Feld-
@@ -1590,7 +1589,7 @@ Datum: 2026-08-24
 - Pipelineguards `v2_009`, `v2_010`, `v2_013`, `v2_014`: PASS.
 - Targetcompile mit `esp32:esp32:m5stack_tab5`: PASS; 782014 Bytes Programm,
   81020 Bytes globale Variablen.
-- Targetupload auf `/dev/cu.usbmodem2101`: PASS; Flash-Verifikation PASS.
+- Targetupload auf `<serial-port>`: PASS; Flash-Verifikation PASS.
 
 Offen ist ausschließlich die manuelle Sichtprüfung am Gerät: Querformat,
 flackerfreie Darstellung, Touch-Tabs, Listenpaging und Scope während eines
@@ -1624,7 +1623,7 @@ Displaytask-Stack ausführt.
 - `display_ui_model_test`: ASan/UBSan PASS.
 - Targetcompile `esp32:esp32:m5stack_tab5`: PASS; 783460 Bytes Programm,
   82036 Bytes globale Variablen.
-- Targetupload `/dev/cu.usbmodem2101`: PASS; Flash-Hash verifiziert.
+- Targetupload `<serial-port>`: PASS; Flash-Hash verifiziert.
 
 Die reale Touchprüfung aller vier Tabs nach dieser Korrektur ist noch offen.
 
@@ -1649,7 +1648,7 @@ Verifikation:
 - `display_ui_model_test`: ASan/UBSan PASS.
 - Targetcompile `esp32:esp32:m5stack_tab5`: PASS; 783778 Bytes Programm,
   82036 Bytes globale Variablen.
-- Targetupload `/dev/cu.usbmodem2101`: PASS; Flash-Hash verifiziert.
+- Targetupload `<serial-port>`: PASS; Flash-Hash verifiziert.
 
 Die fachliche Darstellung verwendet ausschließlich vorhandene Snapshotdaten;
 es wurden keine Formeln, Einheiten oder Decoderzuordnungen ergänzt.
@@ -1684,7 +1683,7 @@ Verifikation:
   `full_ecu_snapshot_test` mit ASan/UBSan: PASS.
 - Targetcompile `esp32:esp32:m5stack_tab5`: PASS; 784008 Bytes Programm,
   82036 Bytes globale Variablen.
-- Targetupload `/dev/cu.usbmodem101`: PASS; Flash-Hash verifiziert.
+- Targetupload `<serial-port>`: PASS; Flash-Hash verifiziert.
 - Displaytask-Stackreserve nach Start: 10156, später 9372 Words.
 - Der unmittelbar anschließende ECU-Handshake antwortete nach dem Flashreset
   nicht (`KWP_TARGET_RESULT=NO_HANDSHAKE`); die reale Motor-aus-Anzeige benötigt
@@ -1714,7 +1713,7 @@ Verifikation:
 - Gezielte Regression `0x8B / raw=255 -> 0.0`: PASS.
 - Targetcompile `esp32:esp32:m5stack_tab5`: PASS; 784152 Bytes Programm,
   82036 Bytes globale Variablen.
-- Targetupload `/dev/cu.usbmodem101`: PASS; Flash-Hash verifiziert.
+- Targetupload `<serial-port>`: PASS; Flash-Hash verifiziert.
 
 Die reale Motor-aus-Verifikation benötigt nach dem Upload erneut einen
 Zündungszyklus und ist noch offen.
@@ -1748,7 +1747,7 @@ Verifikation:
 - Pipelineguards V2-009, V2-010, V2-013 und V2-014: PASS.
 - Targetcompile `esp32:esp32:m5stack_tab5`: PASS; 785184 Bytes Programm,
   82084 Bytes globale Variablen.
-- Targetupload `/dev/cu.usbmodem101`: PASS; Flash-Hash verifiziert.
+- Targetupload `<serial-port>`: PASS; Flash-Hash verifiziert.
 - Nutzerprüfung: Recovery nach Zündungswechsel mehrfach ohne Tab5-Reset
   erfolgreich.
 - Zusätzlich automatisch beobachtet:
@@ -1825,7 +1824,7 @@ Verifikation:
 - Pipelineguards V2-009, V2-010, V2-013 und V2-014: PASS.
 - Targetcompile `esp32:esp32:m5stack_tab5`: PASS; 785628 Bytes Programm,
   82092 Bytes globale Variablen.
-- Targetupload `/dev/cu.usbmodem101`: PASS; Flash-Hash verifiziert.
+- Targetupload `<serial-port>`: PASS; Flash-Hash verifiziert.
 - Reale ECU-Daten nach Upload: `generation=1 session=2`, Gruppenverarbeitung
   aktiv, `k409=1 kwp=1 ecu=1`.
 
@@ -1907,7 +1906,7 @@ Verifikation:
 - Pipelineguards V2-009, V2-010, V2-013 und V2-014: PASS.
 - Targetcompile `esp32:esp32:m5stack_tab5`: PASS; 786016 Bytes Programm,
   82092 Bytes globale Variablen.
-- Targetupload `/dev/cu.usbmodem101`: PASS; Flash-Hash verifiziert.
+- Targetupload `<serial-port>`: PASS; Flash-Hash verifiziert.
 - Reale Motor-aus-Session lief von mindestens Sequenz 0 bis 18 weiter;
   K409, KWP und ECU blieben aktiv.
 - Display nach Upload: `1280x720`, alle Teil-Sprites `ready=1`.
@@ -2077,7 +2076,7 @@ Datum: 2026-08-24
 
 Aufbau: realer M5Stack Tab5, K409/FT232R und Digifant-ECU. Geflasht wurde
 zunächst der mit `V2_015_TARGET_STRESS=1` gebaute Teststand. Die serielle
-Aufzeichnung wurde durch den Agenten direkt auf `/dev/cu.usbmodem101` geführt;
+Aufzeichnung wurde durch den Agenten direkt auf `<serial-port>` geführt;
 es bestand kein konkurrierender serieller Monitor.
 
 Testablauf:
@@ -2172,7 +2171,7 @@ Tatsächlich ausgeführte Nachweise:
 - `git diff --check -- M5Tab5_Digifant_Analyzer`: **PASS**;
 - Targetcompile `esp32:esp32:m5stack_tab5`: **PASS**, 904430 Byte Flash,
   142316 Byte globale Variablen, 185364 Byte verbleibend;
-- Upload auf realen ESP32-P4 `/dev/cu.usbmodem101` inklusive Hashprüfung:
+- Upload auf realen ESP32-P4 `<serial-port>` inklusive Hashprüfung:
   **PASS**;
 - realer Boot ohne eingelegte/lesbare microSD: UI/Serial melden eindeutig
   `NoStorage`, `records=0`, `queue_drops=0`; K409 und der übrige Runtimepfad
@@ -2249,7 +2248,7 @@ Tatsächlich ausgeführte Nachweise:
   **PASS**;
 - Targetcompile `esp32:esp32:m5stack_tab5`: **PASS**, 907534 Bytes Flash,
   154236 Bytes globale Variablen;
-- Upload auf realen Tab5 `/dev/cu.usbmodem2101` mit Flash-Hashprüfung: **PASS**.
+- Upload auf realen Tab5 `<serial-port>` mit Flash-Hashprüfung: **PASS**.
 
 Reales ECU-/IMU-Gate:
 
@@ -2278,7 +2277,7 @@ Status: **V2-017 PASS**. V2-018 ist nachstehend vollständig abgenommen.
 Datum: 2026-08-25
 
 Die aktuelle Firmware wurde mit Arduino-ESP32 `3.3.11` (ESP-IDF 5.5.5) auf
-den realen Tab5 `/dev/cu.usbmodem2101` kompiliert, hochgeladen und per
+den realen Tab5 `<serial-port>` kompiliert, hochgeladen und per
 Flash-Hash verifiziert. Die periodische SD-Prüfung erkannte die zunächst
 fehlende Karte selbstständig als `NoStorage` und wechselte nach dem Einlegen
 ohne START und ohne Reboot auf `Ready`.
@@ -2349,7 +2348,7 @@ greift nicht auf Logger-, KWP- oder IMU-Datenpfade zu.
 
 Datum: 2026-08-25
 
-Reales finales Targetgate auf `/dev/cu.usbmodem2101` mit Arduino-ESP32
+Reales finales Targetgate auf `<serial-port>` mit Arduino-ESP32
 `3.3.11`/ESP-IDF `5.5.5`, anschließend physisches Host-Rücklesen:
 
 ```text
@@ -2403,7 +2402,7 @@ zusätzlich abgesichert durch:
 - finaler Arduino-Targetcompile für `esp32:esp32:m5stack_tab5`: **PASS**
   (917178 Bytes Flash, 156804 Bytes globale Daten).
 
-R1/R2 wurden zuvor zusätzlich auf dem realen Target `/dev/cu.usbmodem2101`
+R1/R2 wurden zuvor zusätzlich auf dem realen Target `<serial-port>`
 über mehr als 60 Sekunden mit angeschlossener ECU beobachtet. KWP-Frames und
 Gruppen 000–004 liefen mit `frame_drops=0`, `rx_drops=0`, `parser_rejects=0`,
 `byte_fault=0` und `action_failures=0`; die IMU-Diagnose meldete gültige
@@ -2432,7 +2431,7 @@ Host-/Sanitizer- und Guard-Ergebnis:
 - Arduino-Targetcompile: **PASS** (915822 Bytes Flash, 156812 Bytes globale
   Daten).
 
-Reales ECU-Gate auf `/dev/cu.usbmodem2101`, 65 Sekunden nach Upload mit
+Reales ECU-Gate auf `<serial-port>`, 65 Sekunden nach Upload mit
 verifiziertem Flash-Hash:
 
 ```text
@@ -2478,7 +2477,7 @@ Hosttests und Golden-Abdeckung:
 - relevante TSan-Tests (SerialConsumer, Processing, Logger, IMU): **PASS**;
 - DLOG-Test und alle Architekturguards: **PASS**.
 
-Target-/ECU-Gate auf `/dev/cu.usbmodem2101`, 65 Sekunden nach verifiziertem
+Target-/ECU-Gate auf `<serial-port>`, 65 Sekunden nach verifiziertem
 Upload; dabei wurden `STATUS`, `SD_STATUS`, `TAB 1` und `TAB 3` real gesendet:
 
 ```text
@@ -2566,7 +2565,7 @@ Verifikation:
   identischer SHA-256;
 - Arduino-Targetcompile `esp32:esp32:m5stack_tab5`: **PASS**, 917530 Byte
   Flash und 157012 Byte globale Daten;
-- Upload/Flashverifikation auf `/dev/cu.usbmodem2101`: **PASS**;
+- Upload/Flashverifikation auf `<serial-port>`: **PASS**;
 - realer Display-/SD-Smoke: Displayinitialisierung mit `action_failures=0`,
   `TAB 0` bis `TAB 3` akzeptiert, SD `storage_present=1`, ein
   `START -> MARKER -> STOP`-Zyklus geschlossen mit `state=1`, `error=0`,
@@ -2686,7 +2685,7 @@ Verifikation:
 - Stress-Targetcompile mit `-DV2_015_TARGET_STRESS=1`: **PASS**, 917596 Byte
   Flash, 157028 Byte globale Daten.
 
-Der reale Produktionslauf auf `/dev/cu.usbmodem2101` dauerte 65 Sekunden und
+Der reale Produktionslauf auf `<serial-port>` dauerte 65 Sekunden und
 zeigte Generation 1/Session 1 mit `k409=1`, `kwp=1`, `ecu=1`, Gruppenbetrieb,
 `frame_drops=0`, `rx_drops=0`, `action_failures=0`, Logger-/IMU-Drops 0 sowie
 `storage_present=1`. Der finale Produktionssnapshot hatte
@@ -2785,9 +2784,10 @@ Datei `g0_s0_86260534_0.dlog` dekodiert weiterhin vollständig und enthält fün
 
 Der reale Target-Smoke erzeugte mit
 `LOG_START → SPROTZ_START → MARKER → SPROTZ_STOP → LOG_STOP` die Datei
-`g0_s0_80838060_0.dlog`. Die SD-Quelle und die Hostkopie haben identische
-SHA-256-Hashes (`9c4176b7ef16e89c842985935a6615003806233cccb9745104fd6ab2ced39b18`).
-Der unabhängige Hostreadback ist DLOG V2, 27906 Byte, 214 Records:
+`g0_s0_80838060_0.dlog`. Die SD-Quelle und die damals erzeugte Hostkopie
+hatten identische SHA-256-Hashes. Die konkrete Hostkopie und ihre Rohdaten
+werden nicht im öffentlichen Repository verteilt. Der unabhängige
+Hostreadback war DLOG V2, 27906 Byte, 214 Records:
 
 - 13 `ECU_SNAPSHOT`, 195 `IMU_SAMPLE`, 1 `IMU_ORIENTATION`;
 - 1 `START`, 3 `MARKER`, 1 `STOP`;

@@ -40,7 +40,7 @@ des separat dokumentierten, derzeit nicht reproduzierten
 | R9 | PASS | Nicht produktiv verwendete `GenerationTracker`, `OperationLifecycle`, `KwpReceiveService`, `KwpRunnerModel` und `UiState` entfernt; ihre Verträge werden durch klar benannte Tests gegen reale KWP-/Snapshot-Komponenten geprüft. R7 bleibt BLOCKED. |
 
 Die R1/R2-Änderungen wurden kompiliert und auf dem realen Target
-`/dev/cu.usbmodem2101` geprüft. In einem Lauf von mehr als 60 Sekunden wurden
+`<serial-port>` geprüft. In einem Lauf von mehr als 60 Sekunden wurden
 KWP-Snapshots für Generation 1/Session 1 mit Gruppen 000–004 beobachtet;
 `frame_drops`, `rx_drops`, `parser_rejects`, `byte_fault` und
 `action_failures` blieben 0. Die IMU-Diagnose meldete fortlaufend gültige

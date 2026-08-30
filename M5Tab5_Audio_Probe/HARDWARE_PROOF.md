@@ -28,7 +28,7 @@ Rechts-Test wird nicht weiter verfolgt.
 
 ## Tatsächliche Targetläufe
 
-Gerät: ESP32-P4, Revision 1.3, USB-Serial/JTAG `/dev/cu.usbmodem1101`.
+Gerät: ESP32-P4, Revision 1.3, USB-Serial/JTAG `<serial-port>`.
 Firmware wurde mit `esp32:esp32:m5stack_tab5`, Arduino-ESP32 3.3.11,
 M5Unified 0.2.19 und M5GFX 0.2.26 gebaut und geflasht.
 
