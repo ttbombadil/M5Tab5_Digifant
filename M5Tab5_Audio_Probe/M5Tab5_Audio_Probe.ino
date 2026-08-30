@@ -22,10 +22,11 @@ constexpr int16_t kFooterHeight = 54;
 constexpr uint32_t kHeartbeatMs = 5000;
 constexpr uint32_t kTouchPollMs = 20;
 constexpr uint32_t kTouchReleaseMs = 30;
-constexpr uint32_t kTouchHealthMs = 5000;
+constexpr uint32_t kTouchHealthMs = 2000;
 constexpr uint32_t kSampleRate = 16000;
 constexpr uint32_t kMaxCaptureSeconds = 30;
 constexpr uint32_t kChunkFrames = kSampleRate / 4;  // 250 ms
+constexpr uint8_t kShortCaptureBlocks = 4;          // 1 s maximum
 constexpr uint32_t kMaxFrames = kSampleRate * kMaxCaptureSeconds;
 constexpr size_t kPcmSamples = static_cast<size_t>(kMaxFrames) * 2U;
 constexpr size_t kChunkSamples = static_cast<size_t>(kChunkFrames) * 2U;
@@ -75,6 +76,14 @@ struct AudioPreparation {
   uint32_t startAttempts = 0;
   uint32_t startSuccesses = 0;
   uint32_t stopRequests = 0;
+  uint32_t blockRequests = 0;
+  uint32_t blockCompletions = 0;
+  uint32_t blockFailures = 0;
+  uint32_t abortedBlocks = 0;
+  uint32_t completedCaptures = 0;
+  uint32_t currentFrames = 0;
+  uint8_t currentBlocks = 0;
+  bool blockPending = false;
 
   bool buffersReady() const { return pcm != nullptr && chunk != nullptr; }
 };
@@ -132,10 +141,17 @@ void runEffect(EffectRequest effect) {
   if (effect == EffectRequest::StartMicrophone) {
     ++audio.startAttempts;
     success = M5.Mic.begin();
-    if (success) ++audio.startSuccesses;
+    if (success) {
+      ++audio.startSuccesses;
+      audio.currentFrames = 0;
+      audio.currentBlocks = 0;
+      audio.blockPending = false;
+    }
   } else {
     ++audio.stopRequests;
+    if (audio.blockPending) ++audio.abortedBlocks;
     M5.Mic.end();
+    audio.blockPending = false;
     success = !M5.Mic.isRunning();
   }
 
@@ -218,7 +234,7 @@ void drawRow(uint8_t row) {
     case UiState::Detail:
       left = "LISTE"; middle = "START MIC"; right = "START MIC"; break;
     case UiState::Capturing:
-      left = middle = right = "STOP MIC"; break;
+      left = middle = right = "STOP RECORD"; break;
     case UiState::StopConfirm:
       left = "WEITER"; middle = right = "STOP OK"; break;
     case UiState::Result:
@@ -308,12 +324,19 @@ void printStatus(const char* reason) {
       static_cast<unsigned long>(ESP.getFreeHeap()));
   Serial.printf(
       "AUDIO_STATUS configured=%s buffers=%s mic_running=%s starts=%lu/%lu "
-      "stops=%lu psram_free=%u\n",
+      "stops=%lu blocks=%lu/%lu block_fail=%lu aborted=%lu captures=%lu "
+      "current_frames=%lu psram_free=%u\n",
       audio.configured ? "yes" : "no", audio.buffersReady() ? "ready" : "failed",
       M5.Mic.isRunning() ? "yes" : "no",
       static_cast<unsigned long>(audio.startSuccesses),
       static_cast<unsigned long>(audio.startAttempts),
       static_cast<unsigned long>(audio.stopRequests),
+      static_cast<unsigned long>(audio.blockCompletions),
+      static_cast<unsigned long>(audio.blockRequests),
+      static_cast<unsigned long>(audio.blockFailures),
+      static_cast<unsigned long>(audio.abortedBlocks),
+      static_cast<unsigned long>(audio.completedCaptures),
+      static_cast<unsigned long>(audio.currentFrames),
       static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)));
 }
 
@@ -333,6 +356,50 @@ void applyEvent(UiEvent event, uint8_t selectedTest, const char* source) {
   if (result.changed) drawTransition(before);
   else drawFooterUpdate("footer_rejected");
   printStatus(source);
+}
+
+void serviceAudioCapture() {
+  if (model.state != UiState::Capturing) return;
+
+  if (!M5.Mic.isRunning()) {
+    ++audio.blockFailures;
+    Serial.println("AUDIO_BLOCK result=failed reason=mic_not_running");
+    applyEvent(UiEvent::CompleteCapture, model.selectedTest, "audio_error");
+    return;
+  }
+
+  if (audio.blockPending) {
+    if (M5.Mic.isRecording()) return;
+    audio.blockPending = false;
+    ++audio.blockCompletions;
+    ++audio.currentBlocks;
+    audio.currentFrames += kChunkFrames;
+    Serial.printf(
+        "AUDIO_BLOCK result=complete capture_block=%u total_complete=%lu "
+        "frames=%lu\n",
+        static_cast<unsigned>(audio.currentBlocks),
+        static_cast<unsigned long>(audio.blockCompletions),
+        static_cast<unsigned long>(audio.currentFrames));
+
+    if (audio.currentBlocks >= kShortCaptureBlocks) {
+      ++audio.completedCaptures;
+      applyEvent(UiEvent::CompleteCapture, model.selectedTest, "audio_complete");
+      return;
+    }
+  }
+
+  ++audio.blockRequests;
+  if (!M5.Mic.record(audio.chunk, kChunkSamples, kSampleRate, true)) {
+    ++audio.blockFailures;
+    Serial.printf("AUDIO_BLOCK result=failed request=%lu\n",
+                  static_cast<unsigned long>(audio.blockRequests));
+    applyEvent(UiEvent::CompleteCapture, model.selectedTest, "audio_error");
+    return;
+  }
+  audio.blockPending = true;
+  Serial.printf("AUDIO_BLOCK result=requested capture_block=%u request=%lu\n",
+                static_cast<unsigned>(audio.currentBlocks + 1),
+                static_cast<unsigned long>(audio.blockRequests));
 }
 
 void pollTouch() {
@@ -525,9 +592,14 @@ void serviceTouchHealth() {
   if (readTouchFirmware()) return;
 
   ++touchHealthFailures;
+  const uint32_t recoveryStarted = millis();
   Serial.printf("TOUCH_HEALTH result=failed check=%lu action=reset\n",
                 static_cast<unsigned long>(touchHealthChecks));
-  if (initializeTouchController()) ++touchRecoveries;
+  const bool recovered = initializeTouchController();
+  if (recovered) ++touchRecoveries;
+  Serial.printf("TOUCH_HEALTH result=%s recovery_ms=%lu\n",
+                recovered ? "recovered" : "recovery_failed",
+                static_cast<unsigned long>(millis() - recoveryStarted));
 }
 
 }  // namespace
@@ -544,9 +616,9 @@ void setup() {
   const bool audioReady = prepareAudioWithoutStartingMicrophone();
 
   drawAll();
-  Serial.println("AUDIO_PROBE mode=MIC_LIFECYCLE_NO_RECORDING");
-  Serial.println("DISABLED speaker microphone_record sd direct_touch_fallback");
-  Serial.println("TOUCH_POLICY irq_reads health_5s reset_on_failed_health");
+  Serial.println("AUDIO_PROBE mode=SHORT_BLOCK_RECORDING");
+  Serial.println("DISABLED speaker long_capture analysis sd direct_touch_fallback");
+  Serial.println("TOUCH_POLICY irq_reads health_2s reset_on_failed_health");
   Serial.printf("TOUCH_READY enabled=%s driver=%s display=%dx%d rotation=%u\n",
                 M5.Touch.isEnabled() ? "yes" : "no",
                 M5.Display.touch() ? "present" : "missing", M5.Display.width(),
@@ -562,6 +634,7 @@ void loop() {
   serviceTouch();
   serviceTouchHealth();
   pollSerial();
+  serviceAudioCapture();
   heartbeat();
   M5.delay(1);
 }

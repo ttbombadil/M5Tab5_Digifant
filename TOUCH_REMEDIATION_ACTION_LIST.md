@@ -187,7 +187,7 @@ Touchcache leer, Heap konstant bei 423688 Byte, kein Brownout und kein Reset.
 Ein weitergehender Leerlauftest zeigte, dass der ST7123 auch ohne
 Koordinaten-Polling nach laengerer Zeit NACK liefern kann. Der finale
 Touch-Service liest Koordinaten deshalb nur bei GPIO23 Low, prueft jedoch alle
-fuenf Sekunden das Firmware-Register. TP_RST wird ausschliesslich nach NACK
+aktuell zwei Sekunden das Firmware-Register. TP_RST wird ausschliesslich nach NACK
 oder ungueltiger Firmwareantwort ausgeloest.
 
 Dieser Stand bestand 120 serielle Renderer-Teilupdates und anschliessend 118
@@ -221,6 +221,23 @@ Quelltexttest stellt sicher, dass `record()` in dieser Stufe nicht vorkommt.
 von 48 Ereignissen; der jeweils naechste Touch nach `M5.Mic.end()` blieb
 erreichbar. Es gab keinen Reset, Brownout, Touch-Watchdog-Eingriff oder
 Speicherverlust.
+
+### Kurze blockweise Audioaufnahme
+
+Die Aufnahme laeuft nun als `tick()`-Service ohne blockierende Warteschleife.
+Ein Durchlauf besteht aus maximal vier 250-ms-Bloecken. Touch, serieller
+Adapter und Touch-Healthcheck werden vor jedem Audio-Tick bedient. Ein
+manueller Stop beendet Mikrofon und UI auch waehrend eines laufenden Blocks;
+der unvollstaendige Block wird nicht als abgeschlossen gezaehlt.
+
+Die finale Abnahme bestand 20 automatische und fuenf physische Aufnahmen.
+Alle 25 Mikrofonstarts und -stopps waren erfolgreich, 91 Bloecke wurden
+abgeschlossen und drei laufende Bloecke kontrolliert abgebrochen. Alle 16
+physischen Touches wurden angenommen. Es trat kein Audiofehler, Reset,
+Brownout, ST7123-NACK, Touch-Recovery oder Speicherverlust auf. Ein im ersten
+Versuch nach einer abgeschlossenen Aufnahme beobachteter, eigenstaendiger
+ST7123-NACK wurde korrekt wiederhergestellt; um den wahrgenommenen Stillstand
+zu begrenzen, prueft der Watchdog nun alle zwei statt alle fuenf Sekunden.
 
 ## Neuer Befund aus dem letzten Gerätetest
 

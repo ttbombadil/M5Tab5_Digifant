@@ -30,13 +30,15 @@ def wav_header(frames, rate=16000, channels=2):
 
 
 class AudioProbeHostTests(unittest.TestCase):
-    def test_microphone_lifecycle_stage_has_no_recording_call(self):
+    def test_short_capture_stage_uses_nonblocking_recording_service(self):
         source = SKETCH.read_text(encoding="utf-8")
         self.assertIn("M5.Mic.config(mic)", source)
         self.assertIn("MALLOC_CAP_SPIRAM", source)
         self.assertIn("M5.Mic.begin(", source)
         self.assertIn("M5.Mic.end(", source)
-        self.assertNotIn("M5.Mic.record(", source)
+        self.assertIn("M5.Mic.record(", source)
+        self.assertIn("void serviceAudioCapture()", source)
+        self.assertNotIn("while (M5.Mic.isRecording())", source)
 
     def test_audio_buffer_plan(self):
         sample_rate = 16000

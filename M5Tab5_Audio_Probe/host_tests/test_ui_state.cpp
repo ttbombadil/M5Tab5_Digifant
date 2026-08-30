@@ -22,6 +22,12 @@ int main() {
   assert(result.accepted && model.state == UiState::Capturing);
   assert(effectForTransition(UiModel{UiState::StopConfirm, 0}, model) ==
          EffectRequest::StartMicrophone);
+  UiModel automaticCapture{UiState::Capturing, 0};
+  UiModel automaticResult = automaticCapture;
+  result = dispatch(automaticResult, UiEvent::CompleteCapture);
+  assert(result.accepted && automaticResult.state == UiState::Result);
+  assert(effectForTransition(automaticCapture, automaticResult) ==
+         EffectRequest::StopMicrophone);
   dispatch(model, UiEvent::Stop);
   result = dispatch(model, UiEvent::ConfirmStop);
   assert(result.accepted && model.state == UiState::Result);

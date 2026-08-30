@@ -10,7 +10,7 @@ Touch-Fallback. Insbesondere werden `M5.Mic.begin()`, `record()` und `end()`
 noch nicht aufgerufen. Der separat versorgte ST7123 erhaelt beim Boot einmal
 einen definierten TP_RST-Impuls. Koordinaten werden nur bei aktivem
 GPIO23-Interrupt und hoechstens alle 20 ms gelesen. Ein
-Firmware-Liveness-Check laeuft alle fuenf Sekunden; nur nach NACK oder
+Firmware-Liveness-Check laeuft alle zwei Sekunden; nur nach NACK oder
 ungueltiger Antwort wird TP_RST ausgeloest.
 
 ## Zustandsfolge
@@ -77,3 +77,13 @@ weiterhin ausgeschlossen. 20 serielle und 12 physische Zyklen bestanden
 vollstaendig; alle 32 Starts und Stopps waren erfolgreich. Die physischen
 Zyklen lieferten 48 angenommene Touches ohne Ablehnung. Kein Reset, Brownout,
 Touch-Recovery, Heap- oder PSRAM-Verlust trat auf.
+
+Kurzaufnahme vom 30.08.2026: Der Audio-Service verarbeitet hoechstens vier
+250-ms-Bloecke und enthaelt keine Warteschleife. Touch, Healthcheck und Serial
+werden vor jedem Audio-Tick bedient. 20 automatische und fuenf physische
+Aufnahmen bestanden mit 25/25 Starts und Stopps. 91 Bloecke wurden
+abgeschlossen, drei laufende Bloecke durch Touch-Stop sauber verworfen. Alle
+16 physischen Touches wurden angenommen; kein Audiofehler, Reset, Brownout,
+ST7123-NACK oder Speicherverlust trat in der finalen Abnahme auf. Ein zuvor
+beobachteter spontaner ST7123-Ausfall wurde ohne CPU-Reset wiederhergestellt;
+die Liveness-Pruefung wurde danach von fuenf auf zwei Sekunden verkuerzt.

@@ -141,7 +141,7 @@ Status: `[x]` – Renderer und Touch-Watchdog bestanden. Der Renderer bestand 12
 der ST7123 nach 58.918 blinden Leerlaufabfragen keine Touchdaten. Der
 Touch-Service wurde auf GPIO23-gesteuertes Lesen umgestellt. Trotzdem fiel der
 ST7123 nach rund 38 Minuten bei exakt null Datenabfragen aus. Aktueller Test:
-Firmware-Liveness alle 5 s; TP_RST nur nach NACK/ungueltiger Antwort. In der
+Firmware-Liveness aktuell alle 2 s; TP_RST nur nach NACK/ungueltiger Antwort. In der
 abschliessenden Abnahme wurden ueber rund 3,65 Stunden 118 Touches erkannt.
 Alle acht Health-Ausfaelle wurden automatisch wiederhergestellt; kein
 CPU-Reset, Brownout, Heapverlust oder dauerhafter Touchausfall trat auf.
@@ -195,7 +195,14 @@ Abnahme:
 
 ### Schritt 6 – Kurze Audioaufnahme
 
-Status: `[ ]`
+Status: `[x]` – nichtblockierende Kurzaufnahme bestanden. Der Audio-Service
+zeichnet maximal vier Bloecke zu je 250 ms auf und wird nur einmal pro
+`loop()` fortgeschrieben. Touch, Healthcheck und Serial laufen vor jedem
+Audio-Tick. 20 automatische und fuenf physische Aufnahmen bestanden mit 25/25
+Mikrofonstarts und -stopps. 91 Bloecke wurden abgeschlossen; drei beim
+manuellen Stop laufende Bloecke wurden kontrolliert abgebrochen. Alle 16
+physischen Touches wurden angenommen; kein Audiofehler, Reset, Brownout,
+Controller-NACK oder Speicherverlust trat in der finalen Abnahme auf.
 
 - Aufnahme in kurzen, kontrollierten Blöcken aktivieren.
 - Audio-Service über `tick()` fortschreiben.
