@@ -10,6 +10,8 @@
   Architektur.
 - [`digifant/DIGIFANT_MEASUREMENT_SEMANTICS.md`](digifant/DIGIFANT_MEASUREMENT_SEMANTICS.md):
   Feldbedeutungen und Evidenzstatus.
+- [`audio/AUDIO_IMPLEMENTATION_PLAN.md`](audio/AUDIO_IMPLEMENTATION_PLAN.md):
+  aktiver Plan für die Audio-Integration in den Analyzer.
 
 ## Projektbezogene Nachweise
 
@@ -27,6 +29,9 @@ Die Dateien unter `archive/refactoring/` und `archive/audio/` sind Reviews
 zum abgeschlossenen Umbau.
 Der `docs/archive/`-Unterbaum enthält ausschließlich historische
 Architekturanalysen und ist nicht maßgeblich für den aktuellen Code.
+
+Der Audio-Review bleibt als Architekturbegründung erhalten; für die Umsetzung
+ist ausschließlich der aktuelle Plan unter `audio/` maßgeblich.
 
 Der frühere Implementierungsplan bleibt als historische Chronik erhalten:
 [`archive/plans/IMPLEMENTATION_PLAN_V2.md`](archive/plans/IMPLEMENTATION_PLAN_V2.md).
