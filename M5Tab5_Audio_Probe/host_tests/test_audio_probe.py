@@ -73,6 +73,14 @@ class AudioProbeHostTests(unittest.TestCase):
         self.assertIn('drawCentered("AUFNAHME STOPPEN", 0, actionTop, width', source)
         self.assertNotIn('left = middle = right = "STOP RECORD"', source)
         self.assertNotIn('left = "LISTE"', source)
+        self.assertIn("kTouchReleaseMs = 150", source)
+        self.assertIn("kTouchPressGuardMs = 350", source)
+        self.assertIn("kTouchHealthResetThreshold = 3", source)
+        self.assertIn("TOUCH_SUPPRESSED", source)
+        self.assertIn("action=retry", source)
+        self.assertIn("kSelectable = 0x001F", source)
+        self.assertIn("kDetail = 0xA300", source)
+        self.assertIn("TFT_CYAN", source)
 
     def test_wav_header_and_pcm_length(self):
         header = wav_header(3)

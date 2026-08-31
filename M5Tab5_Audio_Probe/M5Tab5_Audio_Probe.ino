@@ -25,8 +25,10 @@ using audio_probe::UiState;
 constexpr int16_t kFooterHeight = 54;
 constexpr uint32_t kHeartbeatMs = 5000;
 constexpr uint32_t kTouchPollMs = 20;
-constexpr uint32_t kTouchReleaseMs = 30;
+constexpr uint32_t kTouchReleaseMs = 150;
+constexpr uint32_t kTouchPressGuardMs = 350;
 constexpr uint32_t kTouchHealthMs = 2000;
+constexpr uint8_t kTouchHealthResetThreshold = 3;
 constexpr uint32_t kSampleRate = 16000;
 constexpr uint32_t kMinCaptureSeconds = 20;
 constexpr uint32_t kMaxCaptureSeconds = 30;
@@ -43,8 +45,8 @@ static_assert(kChunkSamples * sizeof(int16_t) == 16000,
               "250 ms stereo chunk reservation changed");
 constexpr uint16_t kBackground = TFT_BLACK;
 constexpr uint16_t kInactive = 0x2104;
-constexpr uint16_t kSelectable = 0x2945;
-constexpr uint16_t kDetail = 0x03EF;
+constexpr uint16_t kSelectable = 0x001F;
+constexpr uint16_t kDetail = 0xA300;
 constexpr uint16_t kCapturing = 0x0320;
 constexpr uint16_t kConfirm = 0xB260;
 constexpr uint16_t kResult = 0x4010;
@@ -56,6 +58,7 @@ const char* const kTestNames[audio_probe::kTestCount] = {
 UiModel model;
 bool touchWasDown = false;
 uint32_t physicalTouches = 0;
+uint32_t suppressedTouches = 0;
 uint32_t serialEvents = 0;
 uint32_t acceptedEvents = 0;
 uint32_t rejectedEvents = 0;
@@ -68,9 +71,12 @@ uint32_t touchReads = 0;
 uint32_t touchIdleSkips = 0;
 uint32_t touchIntTransitions = 0;
 uint32_t touchIntHighSince = 0;
+uint32_t touchPressStartedMs = 0;
+uint32_t lastTouchCandidateMs = 0;
 uint32_t lastTouchHealthCheck = 0;
 uint32_t touchHealthChecks = 0;
 uint32_t touchHealthFailures = 0;
+uint8_t touchHealthFailureStreak = 0;
 uint32_t touchRecoveries = 0;
 uint8_t lastTouchFirmware = 0;
 int8_t lastTouchIntLevel = -1;
@@ -311,6 +317,10 @@ void drawRow(uint8_t row) {
                                      : selectable ? kSelectable : kInactive;
 
   M5.Display.fillRect(0, top, width, height - 2, background);
+  if (selectable) {
+    M5.Display.drawRect(1, top + 1, width - 2, height - 4, TFT_CYAN);
+    M5.Display.fillRect(1, top + 1, 7, height - 4, TFT_CYAN);
+  }
   M5.Display.setTextColor(TFT_WHITE, background);
 
   if (!active) {
@@ -433,12 +443,15 @@ void drawFooterUpdate(const char* scope) {
 
 void printStatus(const char* reason) {
   Serial.printf(
-      "STATUS reason=%s state=%s selected=%u touch=%lu serial=%lu accepted=%lu "
+      "STATUS reason=%s state=%s selected=%u touch=%lu suppressed=%lu "
+      "serial=%lu accepted=%lu "
       "rejected=%lu renders=%lu render_last_us=%lu render_max_us=%lu reads=%lu "
       "idle_skips=%lu gate=%s int23=%d int_edges=%lu cached_count=%u "
-      "health=%lu health_fail=%lu recoveries=%lu fw=0x%02X uptime_ms=%lu heap=%lu\n",
+      "health=%lu health_fail=%lu health_streak=%u recoveries=%lu fw=0x%02X "
+      "uptime_ms=%lu heap=%lu\n",
       reason, audio_probe::stateName(model.state), model.selectedTest + 1,
       static_cast<unsigned long>(physicalTouches),
+      static_cast<unsigned long>(suppressedTouches),
       static_cast<unsigned long>(serialEvents),
       static_cast<unsigned long>(acceptedEvents),
       static_cast<unsigned long>(rejectedEvents),
@@ -452,6 +465,7 @@ void printStatus(const char* reason) {
       static_cast<unsigned>(M5.Touch.getCount()),
       static_cast<unsigned long>(touchHealthChecks),
       static_cast<unsigned long>(touchHealthFailures),
+      static_cast<unsigned>(touchHealthFailureStreak),
       static_cast<unsigned long>(touchRecoveries), lastTouchFirmware,
       static_cast<unsigned long>(millis()),
       static_cast<unsigned long>(ESP.getFreeHeap()));
@@ -762,7 +776,23 @@ void pollTouch() {
   if (touchWasDown) return;
   touchWasDown = true;
 
+  const uint32_t now = millis();
   ++physicalTouches;
+  const uint32_t sincePrevious = lastTouchCandidateMs == 0
+                                     ? UINT32_MAX
+                                     : now - lastTouchCandidateMs;
+  lastTouchCandidateMs = now;
+  touchPressStartedMs = now;
+  if (sincePrevious < kTouchPressGuardMs) {
+    ++suppressedTouches;
+    Serial.printf(
+        "TOUCH_SUPPRESSED number=%lu reason=press_guard delta_ms=%lu "
+        "state=%s int23=%d\n",
+        static_cast<unsigned long>(physicalTouches),
+        static_cast<unsigned long>(sincePrevious),
+        audio_probe::stateName(model.state), digitalRead(23));
+    return;
+  }
   if (detail.x < 0 || detail.y < 0 || detail.x >= M5.Display.width() ||
       detail.y >= contentHeight()) {
     ++rejectedEvents;
@@ -776,9 +806,13 @@ void pollTouch() {
   const uint16_t horizontalPermille = static_cast<uint16_t>(
       static_cast<int32_t>(detail.x) * 1000 / M5.Display.width());
   const UiEvent event = audio_probe::eventForTap(model, row, horizontalPermille);
-  Serial.printf("TOUCH_PRESS number=%lu x=%d y=%d row=%u horizontal=%u\n",
+  Serial.printf(
+      "TOUCH_PRESS number=%lu x=%d y=%d row=%u horizontal=%u delta_ms=%lu "
+      "uptime_ms=%lu\n",
                 static_cast<unsigned long>(physicalTouches), detail.x, detail.y,
-                row + 1, static_cast<unsigned>(horizontalPermille));
+                row + 1, static_cast<unsigned>(horizontalPermille),
+                static_cast<unsigned long>(sincePrevious),
+                static_cast<unsigned long>(now));
   applyEvent(event, row, "touch");
 }
 
@@ -809,8 +843,11 @@ void serviceTouch() {
   if (touchWasDown && touchIntHighSince != 0 &&
       now - touchIntHighSince >= kTouchReleaseMs) {
     touchWasDown = false;
-    Serial.printf("TOUCH_RELEASE int23=1 reads=%lu\n",
-                  static_cast<unsigned long>(touchReads));
+    Serial.printf(
+        "TOUCH_RELEASE int23=1 high_ms=%lu press_ms=%lu reads=%lu\n",
+        static_cast<unsigned long>(now - touchIntHighSince),
+        static_cast<unsigned long>(now - touchPressStartedMs),
+        static_cast<unsigned long>(touchReads));
   }
 }
 
@@ -941,14 +978,29 @@ void serviceTouchHealth() {
       digitalRead(23) == 0) return;
   lastTouchHealthCheck = now;
   ++touchHealthChecks;
-  if (readTouchFirmware()) return;
+  if (readTouchFirmware()) {
+    touchHealthFailureStreak = 0;
+    return;
+  }
 
   ++touchHealthFailures;
+  ++touchHealthFailureStreak;
+  if (touchHealthFailureStreak < kTouchHealthResetThreshold) {
+    Serial.printf(
+        "TOUCH_HEALTH result=failed check=%lu streak=%u action=retry\n",
+        static_cast<unsigned long>(touchHealthChecks),
+        static_cast<unsigned>(touchHealthFailureStreak));
+    return;
+  }
   const uint32_t recoveryStarted = millis();
-  Serial.printf("TOUCH_HEALTH result=failed check=%lu action=reset\n",
-                static_cast<unsigned long>(touchHealthChecks));
+  Serial.printf("TOUCH_HEALTH result=failed check=%lu streak=%u action=reset\n",
+                static_cast<unsigned long>(touchHealthChecks),
+                static_cast<unsigned>(touchHealthFailureStreak));
   const bool recovered = initializeTouchController();
-  if (recovered) ++touchRecoveries;
+  if (recovered) {
+    ++touchRecoveries;
+    touchHealthFailureStreak = 0;
+  }
   Serial.printf("TOUCH_HEALTH result=%s recovery_ms=%lu\n",
                 recovered ? "recovered" : "recovery_failed",
                 static_cast<unsigned long>(millis() - recoveryStarted));
