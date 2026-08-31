@@ -2802,3 +2802,45 @@ Damit ist die neue Messfahrtdatei selbstbeschreibend; die Event-Subtyp-
 Erweiterung ist auf Target und Host verifiziert. KWP, Processing, IMU, Logger-
 Merge, Queueverträge, R7 und der offene `xTaskPriorityDisinherit`-Befund wurden
 nicht verändert.
+
+## Audio A3 – Blockpool und Sampler-Core – 2026-08-31
+
+Der erste Schritt des aktiven
+`docs/audio/AUDIO_IMPLEMENTATION_PLAN.md` ist implementiert, ohne die
+Analyzer-Runtime zu verdrahten. Neu sind:
+
+- `src/audio_types.h`: formatneutrale Block-, Format-, Handle- und
+  Statusverträge; Zeitindizes zählen Sample-Frames statt kanalverschachtelter
+  Einzelwerte;
+- `src/audio_block_pool.h`: allokationsfreier Pool für 34 externe
+  4096-Byte-Blöcke mit maximal 32 Ready-Blöcken, zwei SPSC-Indexqueues,
+  Lease-Schutz gegen stale Handles und expliziter
+  `Free -> MicOwned -> Ready -> WriterOwned -> Free`-Ownership;
+- `src/audio_sampler.h`: Session-, In-flight-, Frameindex-, Drop-/Gap- und
+  Sourcefehlersemantik mit maximal zwei gleichzeitig vom Mikrofon gehaltenen
+  Blöcken;
+- gezielte Hosttests und `tools/check_audio_core.sh`.
+
+Ein voller Ready-Pfad überschreibt keinen Block. Der betroffene Block wird an
+den Pool zurückgegeben, seine Frames werden exakt einmal als Drop gezählt und
+der nächste veröffentlichte Block trägt sowohl den fortgesetzten globalen
+Frameindex als auch `gapFramesBefore`. PCM-Speicher wird dem Pool beim Setup
+extern übergeben; Pool und Sampler allokieren nicht.
+
+Verifikation:
+
+- gezielte Audio-Core-Tests: **2/2 PASS**;
+- vollständige Analyzer-Hosttests mit C++20 und
+  `-Wall -Wextra -Wpedantic -Werror`: **34/34 PASS**;
+- vollständige ASan-/UBSan-Regression: **34/34 PASS**;
+- gezielte Audio-Core-Tests mit TSan einschließlich konkurrierendem
+  Producer-/Consumer-Wrap-around: **2/2 PASS**;
+- Audio-/Touch-Hosttests, DLOG-V2-Test und alle Architektur-/Loggerguards über
+  `tools/run_checks.sh`: **PASS**;
+- Touch-Probe-Targetcompile aus demselben Checklauf: **PASS**;
+- `git diff --check`: **PASS**.
+
+Die produktive `.ino`, KWP, Processing, IMU, DLOG, SD und Taskkonfiguration
+sind unverändert. Deshalb war für A3 noch kein Analyzer-Target- oder ECU-Gate
+erforderlich. Status: **A3 PASS**. Nächster Hardwarepunkt ist A2
+(Motor-/Montageort-Proof); danach folgt A4 (M5Unified-Quelladapter).

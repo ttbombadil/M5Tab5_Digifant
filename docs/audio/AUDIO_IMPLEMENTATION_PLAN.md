@@ -79,17 +79,18 @@ Begründung erhalten.
 |---|---|---|---|
 | A1 | Audio-Probe und generischer Hardware-Proof | PASS | Nachweis liegt vor |
 | A2 | Motor-/Montageort-Proof und Produktformat | PENDING-HARDWARE | reale Motoraufnahme |
-| A3 | Blockpool und Sampler-Core | NEXT | Hosttests und Sanitizer |
-| A4 | M5Unified-Quelladapter | PENDING | Target-Langlauf ohne SD |
+| A3 | Blockpool und Sampler-Core | PASS | Host-/Sanitizernachweis liegt vor |
+| A4 | M5Unified-Quelladapter | BLOCKED-BY-A2 | Target-Langlauf ohne SD |
 | A5 | WAV-Format und Inspektionstool | PENDING | Host-Golden-/Repairtests |
 | A6 | Audio-Writer und SD-Fehlerisolation | PENDING | Audio-only/Dual-Writer |
 | A7 | Analyzer-Control-Link | PENDING | ECU-/IMU-/SD-Integration |
 | A8 | Gemeinsame Messfahrt | PENDING | gestufte reale Fahrten |
 | A9 | Offline-Auswertung | PENDING | reproduzierbare Analyse |
 
-A2 und A3 dürfen parallel vorbereitet werden: Das Produktformat wird erst in
+A2 und A3 durften parallel vorbereitet werden: Das Produktformat wird erst in
 A2 festgelegt, während A3 formatneutral mit einer festen Bytekapazität je
-Block arbeitet. A4 bis A8 werden strikt in Reihenfolge abgeschlossen.
+Block arbeitet. A3 ist abgeschlossen. A4 beginnt erst nach A2; A4 bis A8
+werden strikt in Reihenfolge abgeschlossen.
 
 Pro Arbeitspaket gilt:
 
@@ -118,6 +119,9 @@ Status: **A1 PASS; A2 PENDING-HARDWARE**.
 ### Phase 2 – Sampler und bounded Buffer
 
 #### A3: Hosttestbarer Blockpool und Sampler-Core
+
+Status: **PASS – 2026-08-31**. Implementierung und Nachweis stehen in
+`M5Tab5_Digifant_Analyzer/verification.md`.
 
 Neue Komponenten:
 
@@ -286,8 +290,7 @@ Target-Release.
 
 ## Nächster konkreter Arbeitsschritt
 
-Mit **A3** beginnen: den formatneutralen, hosttestbaren `AudioBlockPool` und
-den `AudioSampler`-Core mit Ownership-, Frameindex-, Overflow- und
-Gap-Vertrag implementieren. Der Code der Audio-Probe dient dabei als
-Hardware-/Formatreferenz, wird aber nicht unkontrolliert in den Analyzer
-kopiert.
+Als nächstes **A2** am vorgesehenen Montageort abschließen und damit Kanalwahl
+und Produktformat festlegen. Danach folgt **A4**, der M5Unified-Quelladapter
+mit einmaliger PSRAM-Reservierung und zunächst deaktivierter
+Analyzer-Runtimeintegration.
