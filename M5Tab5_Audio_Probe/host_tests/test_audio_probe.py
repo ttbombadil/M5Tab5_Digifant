@@ -57,6 +57,23 @@ class AudioProbeHostTests(unittest.TestCase):
         self.assertEqual(sample_rate * 30 * channels * bytes_per_sample, 1_920_000)
         self.assertEqual((sample_rate // 4) * channels * bytes_per_sample, 16_000)
 
+    def test_motor_test_catalog_and_full_height_hitboxes(self):
+        source = SKETCH.read_text(encoding="utf-8")
+        self.assertIn('"4/6 2000 rpm"', source)
+        self.assertIn('"5/6 3000 rpm"', source)
+        self.assertIn('"6/6 3500 rpm"', source)
+        self.assertNotIn("4000 rpm", source)
+        self.assertIn("static_cast<int32_t>(contentHeight()) * row", source)
+        self.assertIn("static_cast<int32_t>(detail.y) * audio_probe::kTestCount", source)
+
+    def test_touch_release_and_single_action_rendering(self):
+        source = SKETCH.read_text(encoding="utf-8")
+        self.assertNotIn("M5.Touch.getCount() == 0) {\n    touchWasDown = false", source)
+        self.assertIn('drawCentered("AUFNAHME STARTEN", 0, actionTop, width', source)
+        self.assertIn('drawCentered("AUFNAHME STOPPEN", 0, actionTop, width', source)
+        self.assertNotIn('left = middle = right = "STOP RECORD"', source)
+        self.assertNotIn('left = "LISTE"', source)
+
     def test_wav_header_and_pcm_length(self):
         header = wav_header(3)
         self.assertEqual(header[:4], b"RIFF")

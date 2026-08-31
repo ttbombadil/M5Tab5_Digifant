@@ -9,14 +9,17 @@ Rechts-Test wird nicht weiter verfolgt.
 
 1. Sketch für `esp32:esp32:m5stack_tab5` flashen.
 2. Seriellen Port mit 115200 Baud öffnen.
-3. Für Ruhe, Sprache/Klatschen und eine 5–30-s-Aufnahme jeweils einen Lauf
-   starten. Touch links oder `ARM` kündigt den Schritt akustisch an; Touch links
-   oder `CAPTURE` startet die Aufnahme, Mitte oder `REPEAT` wiederholt und
-   `NEXT` geht weiter.
+3. Mit `SELECT 1..6` oder Touch einen Messpunkt wählen und mit `NEXT` oder der
+   mittleren/rechten Touchzone die Aufnahme starten. Ein weiteres `NEXT` oder
+   ein Touch stoppt; anschließend den Stop bestätigen.
 4. Für den Kanalzuordnungstest zuerst nur die linke, danach nur die rechte
    Mikrofonposition besprechen/anklopfen und `channel_0`/`channel_1` vergleichen.
 5. Für WAV/PC-Analyse nach dem Lauf `WAV` über die serielle Konsole senden. Die Datei wird erst dann
    nach `/audio_probe.wav` geschrieben.
+
+Auf dem Display entspricht das dem Button `AUF SD SPEICHERN`. Die übrigen
+Messpunktzeilen bleiben sichtbar und sind farblich als direkte Navigation
+markiert; es gibt keinen separaten `LISTE`-Button.
 
 ## Messprotokoll
 
@@ -76,14 +79,19 @@ Motor-Messwerte behauptet.
 | Motor aus / Hintergrund | — | — | — | — | — | — | offen |
 | Leerlauf | — | — | — | — | — | — | offen |
 | ca. 1000 rpm | — | — | — | — | — | — | offen |
-| ca. 1500 rpm | — | — | — | — | — | — | offen |
 | ca. 2000 rpm | — | — | — | — | — | — | offen |
-| ca. 2500 rpm | — | — | — | — | — | — | offen |
+| ca. 3000 rpm | — | — | — | — | — | — | offen |
+| ca. 3500 rpm | — | — | — | — | — | — | offen |
 
 Je Zustand 20–30 s aufnehmen und anschließend offline Spektrum, dominante
 Frequenzen, Pegelreserve, Kanalunterschiede sowie Körperschall/Resonanzen
 bewerten. Erst danach entscheiden, ob 16 kHz und welche Kanal-/Monoabbildung
 für die spätere Fachimplementierung verwendet werden.
+
+Die Stufen 3000 und 3500 rpm prüfen insbesondere Pegelreserve, Clipping und
+drehzahlabhängige Halterungsresonanzen. Stationäre Hochdrehzahl-Aufnahmen
+ersetzen nicht die spätere Lastfahrt, weil Motor-, Abgas-, Wind- und
+Körperschall unter Last anders ausfallen können.
 
 Zusätzlich notieren: Kanalzuordnung, ob beide Kanäle Signal liefern, welcher
 Kanal stärker rauscht/clippt, PSRAM-Reservierung und die ausgegebenen

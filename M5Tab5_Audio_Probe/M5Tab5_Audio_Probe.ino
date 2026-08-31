@@ -43,6 +43,7 @@ static_assert(kChunkSamples * sizeof(int16_t) == 16000,
               "250 ms stereo chunk reservation changed");
 constexpr uint16_t kBackground = TFT_BLACK;
 constexpr uint16_t kInactive = 0x2104;
+constexpr uint16_t kSelectable = 0x2945;
 constexpr uint16_t kDetail = 0x03EF;
 constexpr uint16_t kCapturing = 0x0320;
 constexpr uint16_t kConfirm = 0xB260;
@@ -50,7 +51,7 @@ constexpr uint16_t kResult = 0x4010;
 
 const char* const kTestNames[audio_probe::kTestCount] = {
     "1/6 MOTOR AUS", "2/6 LEERLAUF", "3/6 1000 rpm",
-    "4/6 1500 rpm", "5/6 2000 rpm", "6/6 2500 rpm"};
+    "4/6 2000 rpm", "5/6 3000 rpm", "6/6 3500 rpm"};
 
 UiModel model;
 bool touchWasDown = false;
@@ -255,7 +256,12 @@ void runEffect(EffectRequest effect, bool resumeCapture = false) {
 }
 
 int16_t contentHeight() { return M5.Display.height() - kFooterHeight; }
-int16_t rowHeight() { return contentHeight() / audio_probe::kTestCount; }
+int16_t rowTop(uint8_t row) {
+  return static_cast<int16_t>(static_cast<int32_t>(contentHeight()) * row /
+                              audio_probe::kTestCount);
+}
+
+int16_t rowHeight(uint8_t row) { return rowTop(row + 1U) - rowTop(row); }
 
 const char* eventName(UiEvent event) {
   switch (event) {
@@ -294,10 +300,15 @@ void drawCentered(const char* text, int16_t left, int16_t top, int16_t width,
 
 void drawRow(uint8_t row) {
   const int16_t width = M5.Display.width();
-  const int16_t height = rowHeight();
-  const int16_t top = row * height;
+  const int16_t height = rowHeight(row);
+  const int16_t top = rowTop(row);
   const bool active = model.state != UiState::List && row == model.selectedTest;
-  const uint16_t background = active ? activeColor() : kInactive;
+  const bool selectable = model.state == UiState::List ||
+                          (row != model.selectedTest &&
+                           (model.state == UiState::Detail ||
+                            model.state == UiState::Result));
+  const uint16_t background = active ? activeColor()
+                                     : selectable ? kSelectable : kInactive;
 
   M5.Display.fillRect(0, top, width, height - 2, background);
   M5.Display.setTextColor(TFT_WHITE, background);
@@ -307,7 +318,6 @@ void drawRow(uint8_t row) {
     return;
   }
 
-  const int16_t zoneWidth = width / 3;
   const int16_t titleHeight = height / 3;
   const int16_t actionTop = top + titleHeight;
   const int16_t actionHeight = height - titleHeight - 2;
@@ -336,38 +346,39 @@ void drawRow(uint8_t row) {
   }
   drawCentered(title, 0, top, width, titleHeight, 2);
   M5.Display.drawFastHLine(0, actionTop, width, TFT_LIGHTGREY);
-  M5.Display.drawFastVLine(zoneWidth, actionTop, actionHeight, TFT_LIGHTGREY);
-  M5.Display.drawFastVLine(zoneWidth * 2, actionTop, actionHeight, TFT_LIGHTGREY);
-
-  const char* left = "";
-  const char* middle = "";
-  const char* right = "";
   switch (model.state) {
     case UiState::Detail:
-      left = "LISTE"; middle = "START MIC"; right = "START MIC"; break;
-    case UiState::Capturing:
-      left = middle = right = "STOP RECORD"; break;
-    case UiState::StopConfirm:
-      left = "WEITER"; middle = right = "STOP OK"; break;
-    case UiState::Result:
-      left = "LISTE";
-      middle = "WIEDERHOLEN";
-      right = storage.state == StorageState::Requested ||
-                      storage.state == StorageState::Data ||
-                      storage.state == StorageState::Verify
-                  ? "SCHREIBT..."
-                  : storage.state == StorageState::Complete
-                        ? "WAV OK"
-                        : storage.state == StorageState::Failed
-                              ? "SD FEHLER" : "WAV";
+      drawCentered("AUFNAHME STARTEN", 0, actionTop, width, actionHeight);
       break;
+    case UiState::Capturing:
+      drawCentered("AUFNAHME STOPPEN", 0, actionTop, width, actionHeight);
+      break;
+    case UiState::StopConfirm: {
+      const int16_t half = width / 2;
+      M5.Display.drawFastVLine(half, actionTop, actionHeight, TFT_LIGHTGREY);
+      drawCentered("WEITER AUFNEHMEN", 0, actionTop, half, actionHeight);
+      drawCentered("AUFNAHME BEENDEN", half, actionTop, width - half, actionHeight);
+      break;
+    }
+    case UiState::Result: {
+      const int16_t half = width / 2;
+      const char* storageAction =
+          storage.state == StorageState::Requested ||
+                  storage.state == StorageState::Data ||
+                  storage.state == StorageState::Verify
+              ? "SCHREIBT AUF SD..."
+              : storage.state == StorageState::Complete
+                    ? "AUF SD GESPEICHERT"
+                    : storage.state == StorageState::Failed
+                          ? "SD FEHLER" : "AUF SD SPEICHERN";
+      M5.Display.drawFastVLine(half, actionTop, actionHeight, TFT_LIGHTGREY);
+      drawCentered("WIEDERHOLEN", 0, actionTop, half, actionHeight);
+      drawCentered(storageAction, half, actionTop, width - half, actionHeight);
+      break;
+    }
     case UiState::List:
       break;
   }
-  drawCentered(left, 0, actionTop, zoneWidth, actionHeight);
-  drawCentered(middle, zoneWidth, actionTop, zoneWidth, actionHeight);
-  drawCentered(right, zoneWidth * 2, actionTop,
-               width - zoneWidth * 2, actionHeight);
 }
 
 void drawFooter() {
@@ -745,20 +756,13 @@ void serviceStorage() {
 }
 
 void pollTouch() {
-  if (M5.Touch.getCount() == 0) {
-    touchWasDown = false;
-    return;
-  }
+  if (M5.Touch.getCount() == 0) return;
   const auto detail = M5.Touch.getDetail(0);
-  if (!detail.isPressed()) {
-    touchWasDown = false;
-    return;
-  }
+  if (!detail.isPressed()) return;
   if (touchWasDown) return;
   touchWasDown = true;
 
   ++physicalTouches;
-  const int16_t height = rowHeight();
   if (detail.x < 0 || detail.y < 0 || detail.x >= M5.Display.width() ||
       detail.y >= contentHeight()) {
     ++rejectedEvents;
@@ -767,13 +771,14 @@ void pollTouch() {
     return;
   }
 
-  const uint8_t row = static_cast<uint8_t>(detail.y / height);
-  uint8_t zone = static_cast<uint8_t>((detail.x * 3) / M5.Display.width());
-  if (zone > 2) zone = 2;
-  const UiEvent event = audio_probe::eventForTap(model, row, zone);
-  Serial.printf("TOUCH_PRESS number=%lu x=%d y=%d row=%u zone=%u\n",
+  const uint8_t row = static_cast<uint8_t>(
+      static_cast<int32_t>(detail.y) * audio_probe::kTestCount / contentHeight());
+  const uint16_t horizontalPermille = static_cast<uint16_t>(
+      static_cast<int32_t>(detail.x) * 1000 / M5.Display.width());
+  const UiEvent event = audio_probe::eventForTap(model, row, horizontalPermille);
+  Serial.printf("TOUCH_PRESS number=%lu x=%d y=%d row=%u horizontal=%u\n",
                 static_cast<unsigned long>(physicalTouches), detail.x, detail.y,
-                row + 1, zone);
+                row + 1, static_cast<unsigned>(horizontalPermille));
   applyEvent(event, row, "touch");
 }
 

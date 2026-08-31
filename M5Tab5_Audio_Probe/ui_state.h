@@ -94,20 +94,21 @@ inline EffectRequest effectForTransition(const UiModel& before,
   return EffectRequest::None;
 }
 
-inline UiEvent eventForTap(const UiModel& model, uint8_t row, uint8_t zone) {
-  if (row >= kTestCount || zone > 2) return UiEvent::None;
+inline UiEvent eventForTap(const UiModel& model, uint8_t row,
+                           uint16_t horizontalPermille) {
+  if (row >= kTestCount || horizontalPermille >= 1000) return UiEvent::None;
   if (model.state == UiState::List) return UiEvent::SelectTest;
   if (row != model.selectedTest) {
     return model.state == UiState::Detail || model.state == UiState::Result
              ? UiEvent::SelectTest : UiEvent::None;
   }
   switch (model.state) {
-    case UiState::Detail: return zone == 0 ? UiEvent::Back : UiEvent::Activate;
+    case UiState::Detail: return UiEvent::Activate;
     case UiState::Capturing: return UiEvent::Stop;
-    case UiState::StopConfirm: return zone == 0 ? UiEvent::Resume : UiEvent::ConfirmStop;
+    case UiState::StopConfirm:
+      return horizontalPermille < 500 ? UiEvent::Resume : UiEvent::ConfirmStop;
     case UiState::Result:
-      return zone == 0 ? UiEvent::Back
-                       : zone == 1 ? UiEvent::Repeat : UiEvent::WriteWav;
+      return horizontalPermille < 500 ? UiEvent::Repeat : UiEvent::WriteWav;
     case UiState::List: return UiEvent::SelectTest;
   }
   return UiEvent::None;

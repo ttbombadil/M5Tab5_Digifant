@@ -24,6 +24,16 @@ links oder rechts fuehren zur Liste.
 
 Touch und serielle Bedienung laufen durch dieselbe Ereignisfunktion.
 
+Alle sechs Zeilen bleiben sichtbar. Anwählbare Zeilen sind farblich markiert;
+ein separater `LISTE`-Button ist deshalb nicht nötig. Start und Stop belegen
+jeweils die gesamte Aktionsfläche. Bei der Stopbestätigung und im Ergebnis
+werden je zwei unterschiedliche Aktionen als zwei große Flächen angezeigt.
+
+`AUF SD SPEICHERN` schreibt die zuletzt aufgenommene PCM-Aufnahme als
+`/audio_probe.wav`. Ohne diese Aktion bleibt die Aufnahme nur im PSRAM und
+wird beim nächsten Aufnahmebeginn oder Reset verworfen. Der serielle Befehl
+dafür heißt weiterhin `WAV`.
+
 ## Serielle Befehle (115200 Baud)
 
 ```text
@@ -33,6 +43,11 @@ NEXT         den naechsten regulaeren Zustandsuebergang ausloesen
 LIST         aus DETAIL oder RESULT zur Liste zurueckkehren
 WAV          aktuelle Aufnahme als /audio_probe.wav speichern
 ```
+
+Die sechs Messpunkte sind Motor aus, Leerlauf sowie 1000, 2000, 3000 und
+3500 rpm. Hohe Drehzahlen nur bei warmem Motor und unter sicheren Bedingungen
+halten. Die stationären Messpunkte ersetzen keine spätere Messung unter realer
+Last.
 
 Jeder erkannte Fingerdruck erzeugt `TOUCH_PRESS`, jeder Zustandsversuch
 `EVENT` und anschliessend `STATUS`. Ein Heartbeat erscheint alle fuenf

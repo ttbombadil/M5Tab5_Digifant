@@ -112,7 +112,8 @@ Status: **A1 PASS; A2 PENDING-HARDWARE**.
 - Beide Mikrofonkanäle und ihre Kanalreihenfolge bestätigen.
 - 16 kHz/16 Bit sowie Stereo-zu-Mono-Entscheidung am vorgesehenen Montageort
   mit Pegel-, Spektrum- und Clippingdaten absichern.
-- Leerlauf sowie 1000, 1500, 2000 und 2500 rpm aufnehmen.
+- Leerlauf sowie 1000, 2000, 3000 und 3500 rpm aufnehmen. Die hohen
+  Drehzahlen nur bei warmem Motor und unter sicheren Bedingungen halten.
 - Den noch offenen Motor-Audio-Proof in
   [`HARDWARE_PROOF.md`](../../M5Tab5_Audio_Probe/HARDWARE_PROOF.md) ergänzen.
 
